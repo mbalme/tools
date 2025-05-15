@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Bordereau de livraison - Pipelines E2E</title>
+   <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 2rem;
+      color: #333;
+    }
+
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    .credentials-panel {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin: 2rem auto;
+      max-width: 500px;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #fetchBtn {
+      display: block;
+      width: 100%;
+      padding: 0.8rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #fetchBtn:hover {
+      background-color: #0056b3;
+    }
+
+    .columns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      justify-content: center;
+    }
+
+    .project-column {
+      flex: 1;
+      min-width: 300px;
+      max-width: 500px;
+    }
+
+    .project-column h2 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    ul.results {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: white;
+      margin-bottom: 1rem;
+      padding: 1.5rem;
+      border-left: 6px solid #28a745;
+      border-radius: 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    li h3 {
+      margin-top: 0;
+      color: #007bff;
+    }
+
+    .highlight {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .author {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .author img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+    }
+
+    details summary {
+      cursor: pointer;
+      font-weight: bold;
+      color: #444;
+      margin-top: 1rem;
+    }
+
+    .commit-list {
+      padding-left: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .commit-list li {
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+  </style>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+</head>
+<body>
+  <h1>Bordereau de livraison - Pipelines E2E</h1>
+
+  <div class="credentials-panel">
+    <div class="form-group">
+      <label for="token">🔐 Token GitLab :</label>
+      <input type="password" id="token" placeholder="Ton token personnel" value="glpat-7XCFCB4LberMdmhUDEoc">
+    </div>
+
+    <div class="form-group">
+      <label for="projectIds">📁 IDs des projets (séparés par des virgules) :</label>
+      <input type="text" id="projectIds" placeholder="Ex : 123456,789012" value="283381,428915">
+    </div>
+
+    <button id="fetchBtn">🔍 Récupérer les livraisons</button>
+  </div>
+
+
+  <div id="calendar"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+  <div class="columns" id="results"></div>
+
+    <script>
+   const GITLAB_API_BASE = 'https://gitlab.tech.orange/api/v4';
+    const PROJECT_COLORS = [
+      '#007bff', '#28a745', '#dc3545', '#ffc107', '#6610f2', '#17a2b8', '#fd7e14'
+    ];
+
+    document.getElementById('fetchBtn').addEventListener('click', async () => {
+      const token = document.getElementById('token').value;
+      const projectIds = document.getElementById('projectIds').value.split(',').map(id => id.trim());
+      const calendarEl = document.getElementById('calendar');
+      calendarEl.innerHTML = '';
+
+      if (!token || !projectIds.length) {
+        alert('Merci de remplir le token et au moins un ID de projet.');
+        return;
+      }
+
+      const events = [];
+
+      for (let index = 0; index < projectIds.length; index++) {
+        const projectId = projectIds[index];
+        const color = PROJECT_COLORS[index % PROJECT_COLORS.length];
+
+        try {
+          const projectRes = await fetch(`${GITLAB_API_BASE}/projects/${projectId}`, {
+            headers: { 'PRIVATE-TOKEN': token }
+          });
+          const projectInfo = await projectRes.json();
+          const projectWebUrl = projectInfo.web_url;
+
+          const pipelinesRes = await fetch(`${GITLAB_API_BASE}/projects/${projectId}/pipelines?per_page=100`, {
+            headers: { 'PRIVATE-TOKEN': token }
+          });
+          const pipelines = await pipelinesRes.json();
+          const e2ePipelines = pipelines.filter(p => p.name?.toLowerCase().includes('e2e') || p.name?.toLowerCase().includes('recette'));
+          e2ePipelines.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+          for (let i = 0; i < e2ePipelines.length - 1; i++) {
+            const current = e2ePipelines[i];
+            const previous = e2ePipelines[i + 1];
+
+            if (!current.updated_at) continue;
+
+            const compareUrl = `${projectWebUrl}/-/compare/${previous.sha}...${current.sha}?from_project_id=${projectId}`;
+            const startDateTime = new Date(current.updated_at).toISOString();
+
+            events.push({
+              title: `${projectInfo.name} (${current.ref})`,
+              start: startDateTime,
+              url: compareUrl,
+              color: color,
+              extendedProps: {
+                project: projectInfo.name,
+                branch: current.ref,
+                sha: current.sha.substring(0, 8)
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`Erreur pour le projet ${projectId} :`, error);
+        }
+      }
+
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'fr',
+        firstDay: 1,
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,listMonth'
+        },
+        events,
+        eventClick: function(info) {
+          info.jsEvent.preventDefault();
+          if (info.event.url) window.open(info.event.url, '_blank');
+        },
+        eventDidMount: function(info) {
+          info.el.title = `${info.event.title}\nSHA: ${info.event.extendedProps.sha}`;
+        }
+      });
+
+      calendar.render();
+    });
+  </script>
+</body>
+</html>
