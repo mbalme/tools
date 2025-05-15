@@ -163,14 +163,13 @@
       function getCookie(name) {
   new URLSearchParams(window.location.search).get(name)
 }
-      alert("patGitlab=" + getCookie("patGitlab"));
    const GITLAB_API_BASE = 'https://gitlab.tech.orange/api/v4';
     const PROJECT_COLORS = [
       '#007bff', '#28a745', '#dc3545', '#ffc107', '#6610f2', '#17a2b8', '#fd7e14'
     ];
 
     document.getElementById('fetchBtn').addEventListener('click', async () => {
-      const token = patGitlab;
+      const token = getCookie("patGitlab");
       const projectIds = document.getElementById('projectIds').value.split(',').map(id => id.trim());
       const calendarEl = document.getElementById('calendar');
       calendarEl.innerHTML = '';
