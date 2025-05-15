@@ -170,7 +170,6 @@
 
     document.getElementById('fetchBtn').addEventListener('click', async () => {
       const token = getCookie("patGitlab");
-      alert(token);
       const projectIds = document.getElementById('projectIds').value.split(',').map(id => id.trim());
       const calendarEl = document.getElementById('calendar');
       calendarEl.innerHTML = '';
