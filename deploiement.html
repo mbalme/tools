@@ -136,8 +136,14 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 </head>
 <body>
-  <h1>Bordereau de livraison - Pipelines E2E</h1>
 
+  
+  
+  <div id="calendar"></div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  
+  <div class="columns" id="results"></div>
   <div class="credentials-panel">
     <details>
       <summary>🔐 Configuration GitLab</summary>
@@ -154,13 +160,6 @@
       <button id="fetchBtn">🔍 Récupérer les livraisons</button>
     </details>
   </div>
-
-
-  <div id="calendar"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-
-  <div class="columns" id="results"></div>
 
     <script>
       function getCookie(name) {
