@@ -139,17 +139,20 @@
   <h1>Bordereau de livraison - Pipelines E2E</h1>
 
   <div class="credentials-panel">
-    <div class="form-group">
-      <label for="token">🔐 Token GitLab :</label>
-      <input type="password" id="token" placeholder="Ton token personnel" value="">
-    </div>
+    <details>
+      <summary>🔐 Configuration GitLab</summary>
+      <div class="form-group">
+        <label for="token">Token GitLab :</label>
+        <input type="password" id="token" placeholder="Ton token personnel" value="">
+      </div>
 
-    <div class="form-group">
-      <label for="projectIds">📁 IDs des projets (séparés par des virgules) :</label>
-      <input type="text" id="projectIds" placeholder="Ex : 123456,789012" value="283381,428915">
-    </div>
+      <div class="form-group">
+        <label for="projectIds">📁 IDs des projets (séparés par des virgules) :</label>
+        <input type="text" id="projectIds" placeholder="Ex : 123456,789012" value="283381,428915">
+      </div>
 
-    <button id="fetchBtn">🔍 Récupérer les livraisons</button>
+      <button id="fetchBtn">🔍 Récupérer les livraisons</button>
+    </details>
   </div>
 
 
@@ -245,6 +248,15 @@
       });
 
       calendar.render();
+    });
+
+    // Ajouter l'événement de chargement de la page
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = getCookie("patGitlab");
+      if (token) {
+        document.getElementById('token').value = token;
+        document.getElementById('fetchBtn').click();
+      }
     });
   </script>
 </body>
