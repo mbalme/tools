@@ -13,6 +13,14 @@
         }
 
         .credentials-panel {
+            display: none;
+        }
+
+        h1 {
+            display: none;
+        }
+
+        .credentials-panel {
             background-color: #fff;
             border-radius: 8px;
             padding: 1.5rem;
@@ -291,11 +299,35 @@
             margin-left: 0.2em;
             flex-shrink: 0;
         }
+
+        .cell-summary {
+            background: #F4F5F7;
+            padding: 0.5em;
+            margin-bottom: 0.8em;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #172B4D;
+        }
+
+        .cell-summary-total {
+            font-weight: 600;
+            margin-bottom: 0.3em;
+        }
+
+        .cell-summary-priorities {
+            display: flex;
+            gap: 0.8em;
+            align-items: center;
+        }
+
+        .priority-count {
+            display: flex;
+            align-items: center;
+            gap: 0.3em;
+        }
     </style>
 </head>
 <body>
-    <h1>Vue d'ensemble du Board Jira</h1>
-
     <div class="credentials-panel">
         <div class="form-group">
             <label for="boardId">ID du Board :</label>
@@ -472,6 +504,63 @@
                         const categoryIssues = sprintData.issues.filter(issue => 
                             statusToCategory[issue.fields.status.name] === category
                         );
+
+                        // Ajouter le résumé de la cellule
+                        if (categoryIssues.length > 0) {
+                            console.log('Cellule avec issues:', categoryIssues.length, 'tickets');
+                            const cellSummary = document.createElement('div');
+                            cellSummary.className = 'cell-summary';
+
+                            const totalSummary = document.createElement('div');
+                            totalSummary.className = 'cell-summary-total';
+                            totalSummary.textContent = `${categoryIssues.length} ticket${categoryIssues.length > 1 ? 's' : ''}`;
+                            cellSummary.appendChild(totalSummary);
+
+                            // Grouper par priorité
+                            const priorities = {};
+                            categoryIssues.forEach(issue => {
+                                const priority = issue.fields.priority;
+                                if (!priority) {
+                                    console.log('Issue sans priorité:', issue.key);
+                                    return;
+                                }
+                                
+                                if (!priorities[priority.id]) {
+                                    priorities[priority.id] = {
+                                        count: 0,
+                                        icon: priority.iconUrl,
+                                        name: priority.name
+                                    };
+                                }
+                                priorities[priority.id].count++;
+                            });
+
+                            console.log('Priorités trouvées:', priorities);
+
+                            const prioritiesSummary = document.createElement('div');
+                            prioritiesSummary.className = 'cell-summary-priorities';
+                            
+                            Object.values(priorities).forEach(priority => {
+                                console.log('Affichage priorité:', priority);
+                                const priorityCount = document.createElement('div');
+                                priorityCount.className = 'priority-count';
+                                
+                                const priorityIcon = document.createElement('img');
+                                priorityIcon.src = priority.icon;
+                                priorityIcon.alt = priority.name;
+                                priorityIcon.className = 'priority-icon';
+                                
+                                const count = document.createElement('span');
+                                count.textContent = priority.count;
+                                
+                                priorityCount.appendChild(priorityIcon);
+                                priorityCount.appendChild(count);
+                                prioritiesSummary.appendChild(priorityCount);
+                            });
+
+                            cellSummary.appendChild(prioritiesSummary);
+                            cell.appendChild(cellSummary);
+                        }
                         
                         categoryIssues.sort((a, b) => {
                             // Priorité croissante (id numérique)
@@ -576,6 +665,20 @@
                 container.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
                 console.error('Erreur complète:', error);
             }
+        });
+
+        // Chargement automatique au démarrage
+        window.addEventListener('load', () => {
+            const boardId = document.getElementById('boardId').value;
+            const container = document.getElementById('boardContainer');
+            container.innerHTML = '<div class="loading">Chargement des données...</div>';
+
+            fetchJiraData(boardId)
+                .then(data => renderBoard(data))
+                .catch(error => {
+                    container.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+                    console.error('Erreur complète:', error);
+                });
         });
 
         function getJiraEpicUrl(epicKey) {
