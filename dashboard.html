@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord TV</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #FF4081;
+            --background-color: #121212;
+            --card-background: #1E1E1E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0B0B0;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+
+        .weather-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+            transition: opacity 1s ease;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto 1fr;
+            gap: 12px;
+            padding: 12px;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(3px);
+            background-color: rgba(18, 18, 18, 0.2);
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.8), rgba(255, 64, 129, 0.8));
+            padding: 1px 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: headerGlow 3s infinite alternate;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 0;
+        }
+
+        .weather-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+        }
+
+        .weather-icon {
+            font-size: 1em;
+            color: var(--text-primary);
+            animation: weatherFloat 3s infinite ease-in-out;
+        }
+
+        .weather-temp {
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .weather-desc {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+        }
+
+        @keyframes headerGlow {
+            0% { box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3); }
+            100% { box-shadow: 0 4px 30px rgba(255, 64, 129, 0.4); }
+        }
+
+        .clock {
+            font-size: 1.3em;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .date {
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .card {
+            background-color: rgba(30, 30, 30, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            font-size: 1.2em;
+        }
+
+        .event-list {
+            list-style: none;
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .event-item {
+            padding: 8px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: absolute;
+            width: 100%;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease-in-out;
+        }
+
+        .event-item.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .event-item.previous {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .event-date {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+
+        .event-title {
+            flex-grow: 1;
+            font-size: 0.9em;
+        }
+
+        .event-type {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+
+        .event-type.birthday {
+            background-color: var(--secondary-color);
+        }
+
+        .event-type.meeting {
+            background-color: var(--primary-color);
+        }
+
+        .event-type.reminder {
+            background-color: var(--warning-color);
+        }
+
+        .event-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .event-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .event-dot.active {
+            background: var(--primary-color);
+            transform: scale(1.2);
+        }
+
+        .weather-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .weather-location {
+            font-size: 1.2em;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .weather-description {
+            font-size: 1.1em;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-transform: capitalize;
+        }
+
+        .temperature {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .weather-details {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .weather-detail {
+            text-align: center;
+        }
+
+        .weather-detail-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .weather-detail-label {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        .hourly-forecast {
+            display: flex;
+            gap: 2px;
+            padding: 1px;
+            min-width: 0;
+            flex-shrink: 0;
+        }
+
+        .hourly-forecast:hover {
+            opacity: 1;
+        }
+
+        .hourly-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1px 2px;
+            border-radius: 2px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            min-width: 25px;
+            flex-shrink: 0;
+        }
+
+        .hourly-item:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .hourly-time {
+            font-size: 0.5em;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .hourly-icon {
+            font-size: 0.6em;
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .hourly-temp {
+            font-size: 0.55em;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .hourly-description {
+            font-size: 0.5em;
+            color: var(--text-secondary);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .countdown {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--secondary-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            animation: progressAnimation 2s ease-in-out infinite;
+        }
+
+        @keyframes progressAnimation {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: slideInRight 0.5s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 1400px) {
+            .hourly-container {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .hourly-container {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hourly-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .birthday-card {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .birthday-header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .birthday-countdown {
+            font-size: 1em;
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+
+        .birthday-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8em;
+        }
+
+        .birthday-photo {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .birthday-photo.error {
+            display: none;
+        }
+
+        .birthday-date {
+            color: var(--text-secondary);
+            font-size: 0.75em;
+            min-width: 50px;
+        }
+
+        .birthday-name {
+            flex-grow: 1;
+            font-size: 0.8em;
+        }
+
+        .birthday-days {
+            background-color: var(--secondary-color);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+
+        @keyframes weatherFloat {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes rainAnimation {
+            0% { transform: translateY(-5px); }
+            50% { transform: translateY(5px); }
+            100% { transform: translateY(-5px); }
+        }
+
+        @keyframes snowAnimation {
+            0% { transform: rotate(0deg) translateY(-5px); }
+            50% { transform: rotate(180deg) translateY(5px); }
+            100% { transform: rotate(360deg) translateY(-5px); }
+        }
+
+        @keyframes thunderAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.9;
+            max-width: 100vw;
+            max-height: 100vh;
+            overflow: hidden;
+            filter: contrast(1.1) brightness(1.05);
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            /* ajoute padding/marges pour séparer du bord si besoin */
+        }
+
+        .todo-card {
+            grid-column: 3;
+            grid-row: 2;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .todo-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 6px;
+        }
+
+        .todo-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 6px;
+        }
+
+        .todo-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .todo-section-title {
+            font-size: 0.85em;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .todo-section-count {
+            background: var(--primary-color);
+            color: white;
+            padding: 1px 4px;
+            border-radius: 8px;
+            font-size: 0.7em;
+        }
+
+        .todo-items {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .todo-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--primary-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .todo-checkbox.checked {
+            background: var(--primary-color);
+        }
+
+        .todo-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .todo-text.completed {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .todo-text {
+            font-size: 0.8em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .todo-due-date {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+
+        .todo-priority {
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 0.65em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .todo-priority.high {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .todo-priority.medium {
+            background: var(--warning-color);
+            color: black;
+        }
+
+        .todo-priority.low {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .okr-card {
+            grid-column: 2;
+            grid-row: 2;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .okr-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .okr-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .okr-section-title {
+            font-size: 0.9em;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .okr-item {
+            margin-bottom: 8px;
+        }
+
+        .okr-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .okr-title {
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .okr-progress {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 3px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+        }
+
+        .habits-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            margin-top: 6px;
+        }
+
+        .habit-day {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .habit-day.completed {
+            background: var(--success-color);
+        }
+
+        .habit-day.today {
+            border: 2px solid var(--primary-color);
+        }
+
+        .habit-day:hover {
+            transform: scale(1.1);
+        }
+
+        .streak-counter {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .streak-counter i {
+            color: var(--warning-color);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <video class="bg-video" autoplay muted loop playsinline>
+        <source src="https://cdn.pixabay.com/video/2019/10/24/28236-368501609_tiny.mp4" type="video/mp4">
+        <!-- Tu peux ajouter un format WebM si disponible -->
+    </video>
+    <div class="dashboard content">
+        <header class="header">
+            <div class="header-left">
+                <div class="clock" id="clock">00:00:00</div>
+                <div class="date" id="date">Lundi 1 Janvier 2024</div>
+            </div>
+            <div class="header-right">
+                <div class="weather-info">
+                    <div class="weather-icon" id="weatherIcon">
+                        <i class="fas fa-sun"></i>
+                    </div>
+                    <div class="weather-temp" id="temperature">--°C</div>
+                    <div class="weather-desc" id="weatherDescription">Ensoleillé</div>
+                </div>
+                <div class="hourly-forecast" id="hourlyForecast">
+                    <!-- Les prévisions horaires seront ajoutées ici -->
+                </div>
+            </div>
+        </header>
+
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-calendar"></i> Prochains Événements</h2>
+            <ul class="event-list" id="eventList">
+                <!-- Les événements seront ajoutés dynamiquement -->
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="birthday-card">
+                <div class="birthday-header">
+                    <h2 class="card-title"><i class="fas fa-birthday-cake"></i> Anniversaires</h2>
+                    <div class="birthday-countdown" id="nextBirthday">Dans 5 jours</div>
+                </div>
+                <div id="birthdayList">
+                    <!-- Les anniversaires seront ajoutés dynamiquement -->
+                </div>
+            </div>
+        </div>
+
+        <div class="card todo-card">
+            <h2 class="card-title"><i class="fas fa-tasks"></i> À faire</h2>
+            <div class="todo-container" id="todoList">
+                <!-- Les tâches seront ajoutées dynamiquement -->
+            </div>
+        </div>
+
+        <div class="card okr-card">
+            <h2 class="card-title"><i class="fas fa-bullseye"></i> OKR & Habitudes</h2>
+            <div class="okr-container" id="okrList">
+                <!-- Les OKR et habitudes seront ajoutés dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // Mise à jour de l'horloge
+        function updateClock() {
+            const now = new Date();
+            const clock = document.getElementById('clock');
+            const date = document.getElementById('date');
+            
+            clock.textContent = now.toLocaleTimeString('fr-FR');
+            date.textContent = now.toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Données d'exemple pour les événements
+        const events = [
+            {
+                date: '2025-06-20',
+                title: 'Réunion d\'équipe',
+                type: 'meeting'
+            },
+            {
+                date: '2025-06-17',
+                title: 'Anniversaire de Marie',
+                type: 'birthday'
+            },
+            {
+                date: '2025-06-25',
+                title: 'Rappel: Payer les factures',
+                type: 'reminder'
+            }
+        ];
+
+        // Fonction pour formater la date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long'
+            });
+        }
+
+        // Fonction pour calculer les jours restants
+        function getDaysRemaining(dateString) {
+            const today = new Date();
+            const eventDate = new Date(dateString);
+            const diffTime = eventDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        // Mise à jour de la liste des événements
+        function updateEventList() {
+            const eventList = document.getElementById('eventList');
+            eventList.innerHTML = '';
+
+            // Filtrer les événements à venir
+            const upcomingEvents = events.filter(event => {
+                const daysRemaining = getDaysRemaining(event.date);
+                return daysRemaining >= 0;
+            });
+
+            // Créer les éléments d'événements
+            upcomingEvents.forEach((event, index) => {
+                const li = document.createElement('li');
+                li.className = 'event-item';
+                li.innerHTML = `
+                    <div class="event-date">${formatDate(event.date)}</div>
+                    <div class="event-title">${event.title}</div>
+                    <div class="event-type ${event.type}">${getDaysRemaining(event.date)} jours</div>
+                `;
+                eventList.appendChild(li);
+            });
+
+            // Créer les points de navigation
+            const dotsContainer = document.createElement('div');
+            dotsContainer.className = 'event-dots';
+            upcomingEvents.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'event-dot';
+                dot.addEventListener('click', () => showEvent(index));
+                dotsContainer.appendChild(dot);
+            });
+            eventList.appendChild(dotsContainer);
+
+            // Initialiser le slideshow
+            currentEventIndex = 0;
+            showEvent(0);
+        }
+
+        let currentEventIndex = 0;
+        let slideshowInterval;
+
+        function showEvent(index) {
+            const items = document.querySelectorAll('.event-item');
+            const dots = document.querySelectorAll('.event-dot');
+            
+            // Retirer les classes actives
+            items.forEach(item => {
+                item.classList.remove('active', 'previous');
+            });
+            dots.forEach(dot => dot.classList.remove('active'));
+
+            // Ajouter les classes pour l'animation
+            items[index].classList.add('active');
+            dots[index].classList.add('active');
+
+            // Marquer l'élément précédent
+            const previousIndex = (index - 1 + items.length) % items.length;
+            items[previousIndex].classList.add('previous');
+
+            currentEventIndex = index;
+        }
+
+        function startSlideshow() {
+            const items = document.querySelectorAll('.event-item');
+            if (items.length > 1) {
+                slideshowInterval = setInterval(() => {
+                    const nextIndex = (currentEventIndex + 1) % items.length;
+                    showEvent(nextIndex);
+                }, 5000); // Changer d'événement toutes les 5 secondes
+            }
+        }
+
+        function stopSlideshow() {
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+            }
+        }
+
+        // Mise à jour initiale
+        updateEventList();
+        startSlideshow();
+
+        // Arrêter le slideshow quand la fenêtre n'est pas visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopSlideshow();
+            } else {
+                startSlideshow();
+            }
+        });
+
+        // Données d'exemple pour les anniversaires
+        const birthdays = [
+            {
+                name: 'Marie',
+                date: '2025-06-17'
+            },
+            {
+                name: 'Jean',
+                date: '2024-04-15'
+            },
+            {
+                name: 'Sophie',
+                date: '2024-05-03'
+            }
+        ];
+
+        // Fonction pour récupérer les données des personnes depuis l'API
+        async function fetchPeopleData() {
+            try {
+                console.log('Récupération des données des personnes...');
+                const response = await fetch(wsConfig.buildUrl('api/calBirthday/partial'));
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Données des personnes reçues:', data.length, 'personnes');
+                return data;
+            } catch (error) {
+                console.error('Erreur lors de la récupération des données des personnes:', error);
+                return [];
+            }
+        }
+
+        // Fonction pour extraire la date d'anniversaire d'une personne
+        function getBirthdayDate(person) {
+            if (person.birthday) {
+                const birthDate = new Date(person.birthday);
+                // Retourner la date au format MM-DD pour l'année en cours
+                const currentYear = new Date().getFullYear();
+                return `${currentYear}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`;
+            }
+            return null;
+        }
+
+        // Fonction pour calculer l'âge
+        function calculateAge(birthDate) {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            
+            return age;
+        }
+
+        // Mise à jour de la liste des anniversaires
+        async function updateBirthdayList() {
+            const birthdayList = document.getElementById('birthdayList');
+            const nextBirthday = document.getElementById('nextBirthday');
+            birthdayList.innerHTML = '';
+
+            try {
+                // Récupérer les données depuis l'API
+                const peopleData = await fetchPeopleData();
+                
+                // Filtrer les personnes avec une date de naissance et pas de date de décès
+                const livingPeople = peopleData.filter(person => 
+                    person.birthday && !person.deathDate
+                );
+
+                // Créer la liste des anniversaires pour l'année en cours
+                const birthdays = livingPeople.map(person => {
+                    const birthdayDate = getBirthdayDate(person);
+                    if (birthdayDate) {
+                        return {
+                            name: person.who,
+                            date: birthdayDate,
+                            originalBirthDate: person.birthday,
+                            pic: person.pic,
+                            age: calculateAge(person.birthday)
+                        };
+                    }
+                    return null;
+                }).filter(birthday => birthday !== null);
+
+                // Trier les anniversaires par date
+                birthdays.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                // Trouver le prochain anniversaire
+                const today = new Date();
+                const nextBirthdayEvent = birthdays.find(birthday => {
+                    const birthdayDate = new Date(birthday.date);
+                    return birthdayDate >= today;
+                });
+
+                if (nextBirthdayEvent) {
+                    const daysRemaining = getDaysRemaining(nextBirthdayEvent.date);
+                    nextBirthday.textContent = `Dans ${daysRemaining} jours`;
+                } else {
+                    nextBirthday.textContent = 'Aucun anniversaire à venir';
+                }
+
+                // Afficher les anniversaires à venir (limiter à 4 pour l'affichage)
+                const upcomingBirthdays = birthdays.filter(birthday => {
+                    const daysRemaining = getDaysRemaining(birthday.date);
+                    return daysRemaining >= 0;
+                }).slice(0, 4);
+
+                upcomingBirthdays.forEach(birthday => {
+                    const daysRemaining = getDaysRemaining(birthday.date);
+                    const div = document.createElement('div');
+                    div.className = 'birthday-item';
+                    
+                    // Créer l'élément avec photo si disponible
+                    const photoHtml = birthday.pic ? 
+                        `<img src="${birthday.pic}" alt="${birthday.name}" class="birthday-photo" onerror="this.classList.add('error')">` : 
+                        '';
+                    
+                    div.innerHTML = `
+                        ${photoHtml}
+                        <div class="birthday-date">${formatDate(birthday.date)}</div>
+                        <div class="birthday-name">${birthday.name} (${birthday.age} ans)</div>
+                        <div class="birthday-days">${daysRemaining}j</div>
+                    `;
+                    birthdayList.appendChild(div);
+                });
+
+                // Si aucun anniversaire à venir, afficher un message
+                if (upcomingBirthdays.length === 0) {
+                    const noBirthdayDiv = document.createElement('div');
+                    noBirthdayDiv.className = 'birthday-item';
+                    noBirthdayDiv.innerHTML = `
+                        <div class="birthday-name" style="text-align: center; width: 100%; color: var(--text-secondary);">
+                            Aucun anniversaire à venir
+                        </div>
+                    `;
+                    birthdayList.appendChild(noBirthdayDiv);
+                }
+
+            } catch (error) {
+                console.error('Erreur lors de la mise à jour des anniversaires:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'birthday-item';
+                errorDiv.innerHTML = `
+                    <div class="birthday-name" style="text-align: center; width: 100%; color: var(--danger-color);">
+                        Erreur de chargement
+                    </div>
+                `;
+                birthdayList.appendChild(errorDiv);
+            }
+        }
+
+        // Mise à jour initiale
+        updateBirthdayList().catch(error => {
+            console.error('Erreur lors de la mise à jour initiale des anniversaires:', error);
+        });
+
+        // Mise à jour toutes les minutes
+        setInterval(() => {
+            updateEventList();
+            updateBirthdayList().catch(error => {
+                console.error('Erreur lors de la mise à jour périodique des anniversaires:', error);
+            });
+        }, 60000);
+
+        // Animation de notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Exemple de notification
+        setTimeout(() => {
+            showNotification('Nouveau message reçu !');
+        }, 5000);
+
+        // Configuration de l'API météo
+        const CITY = 'Villejuif';
+        const LATITUDE = 48.7939;
+        const LONGITUDE = 2.3597;
+        const WEATHER_UPDATE_INTERVAL = 1800000; // 30 minutes
+
+        // Fonction pour obtenir l'icône météo appropriée
+        function getWeatherIcon(weatherCode) {
+            const icons = {
+                0: 'sun', // Ciel dégagé
+                1: 'cloud-sun', // Peu nuageux
+                2: 'cloud', // Partiellement nuageux
+                3: 'cloud', // Couvert
+                45: 'smog', // Brumeux
+                48: 'smog', // Brumeux givré
+                51: 'cloud-rain', // Légère bruine
+                53: 'cloud-rain', // Bruine modérée
+                55: 'cloud-showers-heavy', // Forte bruine
+                61: 'cloud-rain', // Légère pluie
+                63: 'cloud-showers-heavy', // Pluie modérée
+                65: 'cloud-showers-heavy', // Forte pluie
+                71: 'snowflake', // Légère neige
+                73: 'snowflake', // Neige modérée
+                75: 'snowflake', // Forte neige
+                77: 'snowflake', // Neige en grains
+                80: 'cloud-showers-heavy', // Légères averses
+                81: 'cloud-showers-heavy', // Averses modérées
+                82: 'cloud-showers-heavy', // Fortes averses
+                85: 'snowflake', // Légères averses de neige
+                86: 'snowflake', // Fortes averses de neige
+                95: 'bolt', // Orage
+                96: 'bolt', // Orage avec grêle légère
+                99: 'bolt' // Orage avec grêle forte
+            };
+            return icons[weatherCode] || 'cloud';
+        }
+
+        // Fonction pour obtenir l'animation appropriée
+        function getWeatherAnimation(weatherCode) {
+            if (weatherCode >= 51 && weatherCode <= 65) {
+                return 'rainAnimation 1s infinite ease-in-out';
+            } else if (weatherCode >= 71 && weatherCode <= 86) {
+                return 'snowAnimation 2s infinite ease-in-out';
+            } else if (weatherCode >= 95 && weatherCode <= 99) {
+                return 'thunderAnimation 0.5s infinite ease-in-out';
+            }
+            return 'weatherFloat 3s infinite ease-in-out';
+        }
+
+        // Fonction pour obtenir la description météo
+        function getWeatherDescription(weatherCode) {
+            const descriptions = {
+                0: 'Ciel dégagé',
+                1: 'Peu nuageux',
+                2: 'Partiellement nuageux',
+                3: 'Couvert',
+                45: 'Brumeux',
+                48: 'Brumeux givré',
+                51: 'Légère bruine',
+                53: 'Bruine modérée',
+                55: 'Forte bruine',
+                61: 'Légère pluie',
+                63: 'Pluie modérée',
+                65: 'Forte pluie',
+                71: 'Légère neige',
+                73: 'Neige modérée',
+                75: 'Forte neige',
+                77: 'Neige en grains',
+                80: 'Légères averses',
+                81: 'Averses modérées',
+                82: 'Fortes averses',
+                85: 'Légères averses de neige',
+                86: 'Fortes averses de neige',
+                95: 'Orage',
+                96: 'Orage avec grêle légère',
+                99: 'Orage avec grêle forte'
+            };
+            return descriptions[weatherCode] || 'Conditions inconnues';
+        }
+
+        // Fonction pour mettre à jour les prévisions horaires
+        function updateHourlyForecast(hourly) {
+            const hourlyContainer = document.getElementById('hourlyForecast');
+            hourlyContainer.innerHTML = '';
+
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            // Afficher les prévisions pour les 6 prochaines heures
+            for (let i = 1; i <= 6; i++) {
+                const hourIndex = currentHour + i;
+                if (hourIndex < hourly.time.length) {
+                    const time = new Date(hourly.time[hourIndex]);
+                    const temp = hourly.temperature_2m[hourIndex];
+                    const weatherCode = hourly.weather_code[hourIndex];
+
+                    const hourlyItem = document.createElement('div');
+                    hourlyItem.className = 'hourly-item';
+                    hourlyItem.innerHTML = `
+                        <div class="hourly-time">${time.getHours()}h</div>
+                        <div class="hourly-icon" style="animation: ${getWeatherAnimation(weatherCode)}">
+                            <i class="fas fa-${getWeatherIcon(weatherCode)}"></i>
+                        </div>
+                        <div class="hourly-temp">${Math.round(temp)}°C</div>
+                    `;
+                    hourlyContainer.appendChild(hourlyItem);
+                }
+            }
+        }
+
+        // Fonction pour obtenir l'URL du fond météo
+        function getWeatherBackground(weatherCode) {
+            const backgrounds = {
+                clear: 'https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif', // Ciel dégagé - soleil brillant
+                cloudy: 'https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif', // Nuageux - nuages gris
+                foggy: 'https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif', // Brumeux - brume légère
+                rain: 'https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif', // Pluie - pluie continue
+                snow: 'https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif', // Neige - neige tombante
+                thunder: 'https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif' // Orage - éclairs et tonnerre
+            };
+
+            // Regroupement des conditions météo similaires
+            const weatherGroups = {
+                clear: [0, 1], // Ciel dégagé et peu nuageux
+                cloudy: [2, 3], // Nuageux et couvert
+                foggy: [45, 48], // Brumeux
+                rain: [51, 53, 55, 61, 63, 65, 80, 81, 82], // Toutes les formes de pluie
+                snow: [71, 73, 75, 77, 85, 86], // Toutes les formes de neige
+                thunder: [95, 96, 99] // Orage
+            };
+
+            // Trouver le groupe correspondant
+            for (const [group, codes] of Object.entries(weatherGroups)) {
+                if (codes.includes(weatherCode)) {
+                    return backgrounds[group];
+                }
+            }
+
+            return backgrounds.cloudy; // Par défaut, ciel couvert
+        }
+
+        // Fonction pour mettre à jour la météo
+        async function updateWeather() {
+            try {
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code&timezone=Europe%2FParis`);
+                const data = await response.json();
+
+                if (data.current && data.hourly) {
+                    const current = data.current;
+                    const hourly = data.hourly;
+
+                    // Mise à jour du fond météo
+                    const weatherBackground = document.querySelector('.weather-background');
+                    if (!weatherBackground) {
+                        const bg = document.createElement('div');
+                        bg.className = 'weather-background';
+                        //document.body.insertBefore(bg, document.body.firstChild);
+                    }
+                    //document.querySelector('.weather-background').style.backgroundImage = `url(${getWeatherBackground(current.weather_code)})`;
+
+                    // Mise à jour des éléments de l'interface
+                    document.getElementById('temperature').textContent = `${Math.round(current.temperature_2m)}°C`;
+                    document.getElementById('weatherDescription').textContent = getWeatherDescription(current.weather_code);
+                    
+                    // Mise à jour de l'icône
+                    const weatherIcon = document.getElementById('weatherIcon');
+                    weatherIcon.innerHTML = `<i class="fas fa-${getWeatherIcon(current.weather_code)}"></i>`;
+                    weatherIcon.style.animation = getWeatherAnimation(current.weather_code);
+
+                    // Mise à jour des prévisions horaires
+                    updateHourlyForecast(hourly);
+                } else {
+                    throw new Error('Erreur lors de la récupération des données météo');
+                }
+            } catch (error) {
+                console.error('Erreur météo:', error);
+                showNotification('Erreur lors de la mise à jour de la météo');
+            }
+        }
+
+        // Mise à jour initiale de la météo
+        updateWeather();
+
+        // Mise à jour périodique de la météo
+        setInterval(updateWeather, WEATHER_UPDATE_INTERVAL);
+
+        // Données d'exemple pour les tâches
+        const todos = {
+            "Travail": [
+                {
+                    text: "Finaliser le rapport mensuel",
+                    completed: false,
+                    dueDate: "2024-03-20",
+                    priority: "high"
+                },
+                {
+                    text: "Préparer la présentation client",
+                    completed: false,
+                    dueDate: "2024-03-22",
+                    priority: "medium"
+                },
+                {
+                    text: "Répondre aux emails en attente",
+                    completed: false,
+                    dueDate: "2024-03-19",
+                    priority: "high"
+                },
+                {
+                    text: "Mettre à jour la documentation",
+                    completed: true,
+                    dueDate: "2024-03-15",
+                    priority: "low"
+                }
+            ],
+            "Personnel": [
+                {
+                    text: "Faire les courses",
+                    completed: false,
+                    dueDate: "2024-03-18",
+                    priority: "medium"
+                },
+                {
+                    text: "Rendre les livres à la bibliothèque",
+                    completed: true,
+                    dueDate: "2024-03-15",
+                    priority: "low"
+                },
+                {
+                    text: "Prendre RDV chez le dentiste",
+                    completed: false,
+                    dueDate: "2024-03-25",
+                    priority: "medium"
+                }
+            ],
+            "Projets": [
+                {
+                    text: "Mettre à jour le portfolio",
+                    completed: false,
+                    dueDate: "2024-03-25",
+                    priority: "high"
+                },
+                {
+                    text: "Finaliser le design du site",
+                    completed: false,
+                    dueDate: "2024-03-28",
+                    priority: "high"
+                },
+                {
+                    text: "Réviser le code",
+                    completed: false,
+                    dueDate: "2024-03-21",
+                    priority: "medium"
+                }
+            ]
+        };
+
+        // Fonction pour formater la date
+        function formatTodoDate(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return "Aujourd'hui";
+            } else if (date.toDateString() === tomorrow.toDateString()) {
+                return "Demain";
+            } else {
+                return date.toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long'
+                });
+            }
+        }
+
+        // Fonction pour mettre à jour la liste des tâches
+        function updateTodoList() {
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = '';
+
+            for (const [section, items] of Object.entries(todos)) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'todo-section';
+                
+                const sectionHeader = document.createElement('div');
+                sectionHeader.className = 'todo-section-header';
+                
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'todo-section-title';
+                sectionTitle.innerHTML = `
+                    <i class="fas fa-folder"></i>
+                    ${section}
+                    <span class="todo-section-count">${items.length}</span>
+                `;
+                
+                sectionHeader.appendChild(sectionTitle);
+                sectionDiv.appendChild(sectionHeader);
+
+                const todoItems = document.createElement('div');
+                todoItems.className = 'todo-items';
+
+                items.forEach(item => {
+                    const todoItem = document.createElement('div');
+                    todoItem.className = 'todo-item';
+                    todoItem.innerHTML = `
+                        <div class="todo-checkbox ${item.completed ? 'checked' : ''}" onclick="toggleTodo('${section}', '${item.text}')"></div>
+                        <div class="todo-content">
+                            <div class="todo-text ${item.completed ? 'completed' : ''}">${item.text}</div>
+                            <div class="todo-due-date">${formatTodoDate(item.dueDate)}</div>
+                        </div>
+                        <div class="todo-priority ${item.priority}">${item.priority}</div>
+                    `;
+                    todoItems.appendChild(todoItem);
+                });
+
+                sectionDiv.appendChild(todoItems);
+                todoList.appendChild(sectionDiv);
+            }
+        }
+
+        // Fonction pour basculer l'état d'une tâche
+        function toggleTodo(section, text) {
+            const item = todos[section].find(todo => todo.text === text);
+            if (item) {
+                item.completed = !item.completed;
+                updateTodoList();
+            }
+        }
+
+        // Mise à jour initiale de la liste des tâches
+        updateTodoList();
+
+        // Données d'exemple pour les OKR et habitudes
+        const okrData = {
+            "Objectifs Professionnels": [
+                {
+                    title: "Améliorer la performance du site",
+                    progress: 75,
+                    keyResults: [
+                        { text: "Temps de chargement < 2s", progress: 80 },
+                        { text: "Score Lighthouse > 90", progress: 65 },
+                        { text: "Réduire les erreurs 404", progress: 90 }
+                    ]
+                },
+                {
+                    title: "Formation continue",
+                    progress: 60,
+                    keyResults: [
+                        { text: "Compléter 3 cours en ligne", progress: 66 },
+                        { text: "Obtenir 2 certifications", progress: 50 }
+                    ]
+                }
+            ],
+            "Habitudes": [
+                {
+                    title: "Lecture quotidienne",
+                    streak: 5,
+                    days: [true, true, true, true, true, false, false],
+                    goal: "30 minutes"
+                },
+                {
+                    title: "Exercice physique",
+                    streak: 3,
+                    days: [true, true, true, false, false, false, false],
+                    goal: "20 minutes"
+                },
+                {
+                    title: "Méditation",
+                    streak: 7,
+                    days: [true, true, true, true, true, true, true],
+                    goal: "10 minutes"
+                }
+            ]
+        };
+
+        // Fonction pour mettre à jour les OKR et habitudes
+        function updateOKRList() {
+            const okrList = document.getElementById('okrList');
+            okrList.innerHTML = '';
+
+            // Affichage des OKR
+            const okrSection = document.createElement('div');
+            okrSection.className = 'okr-section';
+            okrSection.innerHTML = `
+                <div class="okr-section-title">
+                    <i class="fas fa-bullseye"></i>
+                    Objectifs Professionnels
+                </div>
+            `;
+
+            okrData["Objectifs Professionnels"].forEach(okr => {
+                const okrItem = document.createElement('div');
+                okrItem.className = 'okr-item';
+                okrItem.innerHTML = `
+                    <div class="okr-header">
+                        <div class="okr-title">${okr.title}</div>
+                        <div class="okr-progress">${okr.progress}%</div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${okr.progress}%"></div>
+                    </div>
+                    ${okr.keyResults.map(kr => `
+                        <div class="okr-item" style="margin-top: 8px; margin-left: 12px;">
+                            <div class="okr-header">
+                                <div class="okr-title" style="font-size: 0.85em;">${kr.text}</div>
+                                <div class="okr-progress">${kr.progress}%</div>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: ${kr.progress}%"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+                okrSection.appendChild(okrItem);
+            });
+
+            okrList.appendChild(okrSection);
+
+            // Affichage des habitudes
+            const habitsSection = document.createElement('div');
+            habitsSection.className = 'okr-section';
+            habitsSection.innerHTML = `
+                <div class="okr-section-title">
+                    <i class="fas fa-calendar-check"></i>
+                    Habitudes
+                </div>
+            `;
+
+            okrData["Habitudes"].forEach(habit => {
+                const habitItem = document.createElement('div');
+                habitItem.className = 'okr-item';
+                
+                const today = new Date().getDay();
+                const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+                
+                habitItem.innerHTML = `
+                    <div class="okr-header">
+                        <div class="okr-title">${habit.title}</div>
+                        <div class="okr-progress">${habit.goal}</div>
+                    </div>
+                    <div class="habits-grid">
+                        ${days.map((day, index) => `
+                            <div class="habit-day ${habit.days[index] ? 'completed' : ''} ${index === today ? 'today' : ''}">
+                                ${day}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="streak-counter">
+                        <i class="fas fa-fire"></i>
+                        ${habit.streak} jours consécutifs
+                    </div>
+                `;
+                habitsSection.appendChild(habitItem);
+            });
+
+            okrList.appendChild(habitsSection);
+        }
+
+        // Mise à jour initiale
+        updateOKRList();
+    </script>
+</body>
+</html> 

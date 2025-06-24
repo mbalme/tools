@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier des Films Vus - Trakt</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #e2e8f0;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --hover-color: #2d3748;
+            --accent-color: #60a5fa;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease;
+        }
+
+        .year-section {
+            margin-bottom: 40px;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .year-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px var(--shadow-color);
+        }
+
+        .year-title {
+            font-size: 24px;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .year-stats {
+            font-size: 0.6em;
+            color: var(--text-color);
+            font-weight: normal;
+            opacity: 0.7;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+
+        .month-column {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            min-height: 40px;
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            transition: transform 0.2s ease;
+        }
+
+        .month-column:hover {
+            transform: scale(1.02);
+            border-color: var(--accent-color);
+        }
+
+        .month-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: var(--accent-color);
+            font-size: 0.9em;
+            text-transform: capitalize;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .month-stats {
+            font-size: 0.7em;
+            color: var(--text-color);
+            font-weight: normal;
+            opacity: 0.7;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+            gap: 4px;
+        }
+
+        .movie-item {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .movie-item:hover {
+            transform: scale(1.1);
+            z-index: 1;
+        }
+
+        .movie-poster {
+            width: 35px;
+            height: 52px;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: transform 0.2s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .movie-poster.loaded {
+            opacity: 1;
+        }
+
+        .movie-poster-placeholder {
+            width: 35px;
+            height: 52px;
+            background: linear-gradient(45deg, var(--card-bg), var(--hover-color));
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            font-size: 8px;
+            text-align: center;
+            padding: 2px;
+        }
+
+        .movie-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            width: 220px;
+            font-size: 12px;
+            color: var(--text-color);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 2;
+        }
+
+        .movie-item:hover .movie-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .movie-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--card-bg) transparent transparent transparent;
+        }
+
+        .movie-tooltip .movie-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: var(--accent-color);
+            font-size: 1.1em;
+        }
+
+        .movie-tooltip .movie-date {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .movie-tooltip .movie-info {
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .movie-tooltip .movie-info p {
+            margin: 4px 0;
+        }
+
+        .movie-tooltip .movie-info strong {
+            color: var(--accent-color);
+        }
+
+        .shows-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .show-item {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 5px;
+            display: flex;
+            justify-content: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .show-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .show-item .movie-poster {
+            width: 50px;
+            height: 75px;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: transform 0.2s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .show-item .movie-poster.loaded {
+            opacity: 1;
+        }
+
+        .show-item .movie-poster-placeholder {
+            width: 50px;
+            height: 75px;
+            background: linear-gradient(45deg, var(--card-bg), var(--hover-color));
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            font-size: 8px;
+            text-align: center;
+            padding: 2px;
+        }
+
+        .show-item .movie-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            width: 220px;
+            font-size: 12px;
+            color: var(--text-color);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 2;
+            margin-bottom: 10px;
+        }
+
+        .show-item:hover .movie-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .show-item .movie-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--card-bg) transparent transparent transparent;
+        }
+
+        .show-item .movie-tooltip .movie-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: var(--accent-color);
+            font-size: 1.1em;
+        }
+
+        .show-item .movie-tooltip .movie-season {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .show-item .movie-tooltip .movie-details {
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .show-item .movie-tooltip .movie-details p {
+            margin: 4px 0;
+        }
+
+        .show-item .movie-tooltip .movie-details strong {
+            color: var(--accent-color);
+        }
+
+        .show-item .movie-content {
+            flex: 1;
+        }
+
+        .show-item .movie-title {
+            font-size: 1em;
+            color: var(--accent-color);
+            margin-bottom: 4px;
+        }
+
+        .show-item .movie-season {
+            color: #94a3b8;
+            font-size: 0.8em;
+            margin-bottom: 4px;
+        }
+
+        .show-item .movie-details {
+            color: #cbd5e1;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 1200px) {
+            .calendar-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .calendar-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .shows-grid {
+                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            }
+            .show-item .movie-poster {
+                width: 40px;
+                height: 60px;
+            }
+            .show-item .movie-poster-placeholder {
+                width: 40px;
+                height: 60px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+            
+            .year-section {
+                padding: 12px;
+            }
+
+            .movie-item {
+                padding: 4px;
+            }
+
+            .movie-poster {
+                width: 35px;
+                height: 52px;
+            }
+
+            .calendar-grid {
+                grid-template-columns: 1fr;
+            }
+            .shows-grid {
+                grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+            }
+            .show-item .movie-poster {
+                width: 35px;
+                height: 52px;
+            }
+            .show-item .movie-poster-placeholder {
+                width: 35px;
+                height: 52px;
+            }
+        }
+
+        .content-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--accent-color);
+        }
+
+        .watchlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 4px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 1200px) {
+            .watchlist-grid {
+                grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .watchlist-grid {
+                grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+            }
+        }
+
+        .watchlist-item .movie-poster {
+            opacity: 0.3;
+        }
+
+        .watchlist-item .movie-poster-placeholder {
+            opacity: 0.3;
+        }
+
+        .watchlist-item .movie-tooltip::before {
+            content: 'À voir';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--accent-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .watchlist-item.show-item .movie-poster {
+            opacity: 0.3;
+        }
+
+        .watchlist-item.show-item .movie-poster-placeholder {
+            opacity: 0.3;
+        }
+
+        .watchlist-item.show-item .movie-tooltip::before {
+            content: 'Série à venir';
+            background-color: var(--accent-color);
+        }
+
+        .upcoming-season {
+            position: relative;
+        }
+
+        .upcoming-season::before {
+            display: none;
+        }
+
+        .upcoming-season .movie-poster {
+            opacity: 0.3 !important;
+        }
+
+        .upcoming-season .movie-poster-placeholder {
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div id="calendar-container"></div>
+
+    <script src="js/config.js"></script>
+    <script>
+        const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 heures en millisecondes
+        const CSV_CACHE_KEY = 'trakt_movies_csv';
+        const MOVIE_DETAILS_CACHE_KEY = 'trakt_movie_details';
+
+        async function fetchCSVData() {
+            try {
+                const [historyResponse, watchlistResponse] = await Promise.all([
+                    fetch(wsConfig.buildServeUrl('https://trakt.tv/users/mbalme/history.csv?slurm=8236561f53feeaf744ce432345e6b53b%26')),
+                    fetch(wsConfig.buildServeUrl('https://trakt.tv/users/mbalme/watchlist.csv?slurm=8236561f53feeaf744ce432345e6b53b%26'))
+                ]);
+
+                if (!historyResponse.ok || !watchlistResponse.ok) {
+                    throw new Error('Erreur lors de la récupération des données CSV');
+                }
+
+                return {
+                    history: await historyResponse.text(),
+                    watchlist: await watchlistResponse.text()
+                };
+            } catch (error) {
+                console.error('Erreur:', error);
+                return null;
+            }
+        }
+
+        async function fetchMovieDetails(tmdbId) {
+            if (!tmdbId) return null;
+            try {
+                const response = await fetch(wsConfig.buildServeApiUrl('movie', tmdbId));
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des détails du film ${tmdbId}:`, error);
+                return null;
+            }
+        }
+
+        async function fetchShowDetails(tmdbId, type = 'tv') {
+            if (!tmdbId) return null;
+            try {
+                const response = await fetch(wsConfig.buildServeApiUrl(type, tmdbId));
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des détails de la série ${tmdbId}:`, error);
+                return null;
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const headers = lines[0].split(',');
+            
+            const items = lines.slice(1)
+                .map(line => {
+                    const item = {};
+                    let currentIndex = 0;
+                    let currentField = '';
+                    let inQuotes = false;
+                    
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        
+                        if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else if (char === ',' && !inQuotes) {
+                            item[headers[currentIndex]] = currentField;
+                            currentField = '';
+                            currentIndex++;
+                        } else {
+                            currentField += char;
+                        }
+                    }
+                    
+                    if (currentField) {
+                        item[headers[currentIndex]] = currentField;
+                    }
+                    
+                    return item;
+                });
+
+            // Si c'est la watchlist, on retourne directement les items
+            if (headers.includes('type') && headers.includes('watched_at')) {
+                // Nettoyer les données en regroupant par jour
+                const moviesByDay = new Map();
+                const showsByDay = new Map();
+                const MAX_MINUTES_PER_DAY = 24 * 60; // 24 heures en minutes
+
+                function getDayKey(dateStr) {
+                    try {
+                        const cleanDate = dateStr.replace(/[^0-9-T:]/g, '');
+                        const date = new Date(cleanDate);
+                        if (isNaN(date.getTime())) {
+                            console.warn('Date invalide ignorée:', dateStr);
+                            return null;
+                        }
+                        return date.toISOString().split('T')[0];
+                    } catch (error) {
+                        console.warn('Erreur de parsing de date:', dateStr, error);
+                        return null;
+                    }
+                }
+
+                items.forEach(item => {
+                    const dayKey = getDayKey(item.watched_at);
+                    if (!dayKey) return;
+                    
+                    if (item.type === 'movie') {
+                        if (!moviesByDay.has(dayKey)) {
+                            moviesByDay.set(dayKey, {
+                                totalRuntime: 0,
+                                movies: []
+                            });
+                        }
+                        
+                        const dayData = moviesByDay.get(dayKey);
+                        const runtime = parseInt(item.runtime) || 0;
+                        
+                        if (dayData.totalRuntime + runtime <= MAX_MINUTES_PER_DAY) {
+                            dayData.totalRuntime += runtime;
+                            dayData.movies.push(item);
+                        }
+                    } else if (item.type === 'episode') {
+                        // Pour les épisodes, on les garde tous sans regroupement
+                        if (!showsByDay.has(dayKey)) {
+                            showsByDay.set(dayKey, {
+                                seasons: new Map()
+                            });
+                        }
+                        const dayData = showsByDay.get(dayKey);
+                        const seasonKey = `${item.tmdb_id}_${item.season_number}`;
+                        
+                        if (!dayData.seasons.has(seasonKey)) {
+                            dayData.seasons.set(seasonKey, {
+                                showId: item.tmdb_id,
+                                season: item.season_number,
+                                episodes: []
+                            });
+                        }
+                        // Ajouter l'épisode sans vérification de doublon
+                        dayData.seasons.get(seasonKey).episodes.push({
+                            ...item,
+                            season_number: parseInt(item.season_number),
+                            episode_number: parseInt(item.episode_number)
+                        });
+                    }
+                });
+
+                // Reconstruire la liste des films et séries nettoyée
+                return [
+                    ...Array.from(moviesByDay.values()).flatMap(dayData => dayData.movies),
+                    ...Array.from(showsByDay.values()).flatMap(dayData => 
+                        Array.from(dayData.seasons.values()).flatMap(season => 
+                            season.episodes.map(episode => ({
+                                ...episode,
+                                season_number: season.season,
+                                season_episodes: season.episodes
+                            }))
+                        )
+                    )
+                ];
+            } else {
+                // Pour la watchlist, on ajoute un type 'movie' et une date fictive
+                return items.map(item => ({
+                    ...item,
+                    type: item.type,
+                    watched_at: new Date().toISOString() // Date fictive pour la compatibilité
+                }));
+            }
+        }
+
+        function groupContentByYear(content, watchlist) {
+            const groupedContent = content.reduce((acc, item) => {
+                const year = new Date(item.watched_at).getFullYear();
+                if (!acc[year]) {
+                    acc[year] = {
+                        movies: [],
+                        shows: new Map(),
+                        watchlist: {
+                            movies: new Map(),
+                            shows: new Map()
+                        }
+                    };
+                }
+                if (item.type === 'movie') {
+                    acc[year].movies.push(item);
+                } else if (item.type === 'episode') {
+                    if (!acc[year].shows.has(item.tmdb_id)) {
+                        acc[year].shows.set(item.tmdb_id, {
+                            show: null,
+                            episodes: []
+                        });
+                    }
+                    const showData = acc[year].shows.get(item.tmdb_id);
+                    showData.episodes.push({
+                        ...item,
+                        season_number: parseInt(item.season_number),
+                        episode_number: parseInt(item.episode_number)
+                    });
+                }
+                return acc;
+            }, {});
+
+            // Dispatcher les éléments de la watchlist selon leur type et date de sortie
+            if (watchlist && watchlist.length > 0) {
+                console.log('Watchlist complète:', watchlist);
+                let totalShows = 0;
+                let totalMovies = 0;
+                
+                // D'abord, créer toutes les années nécessaires
+                const allYears = new Set();
+                watchlist.forEach(item => {
+                    if (item.released) {
+                        const releaseDate = new Date(item.released);
+                        allYears.add(releaseDate.getFullYear());
+                    }
+                });
+
+                // Initialiser les années manquantes
+                allYears.forEach(year => {
+                    if (!groupedContent[year]) {
+                        groupedContent[year] = {
+                            movies: [],
+                            shows: new Map(),
+                            watchlist: {
+                                movies: new Map(),
+                                shows: new Map()
+                            }
+                        };
+                    }
+                });
+
+                // Ensuite, dispatcher les éléments
+                watchlist.forEach(item => {
+                    if (item.released) {
+                        const releaseDate = new Date(item.released);
+                        const year = releaseDate.getFullYear();
+                        const month = releaseDate.getMonth() + 1;
+
+                        // Déterminer le type en fonction du champ type
+                        const isShow = item.type === 'show' || item.type === 'tv';
+                        const type = isShow ? 'show' : 'movie';
+                        
+                        if (isShow) totalShows++;
+                        else totalMovies++;
+
+                        if (type === 'show') {
+                            // Pour les séries, on les ajoute à toutes les années pertinentes
+                            if (!groupedContent[year].watchlist.shows.has(month)) {
+                                groupedContent[year].watchlist.shows.set(month, []);
+                            }
+                            groupedContent[year].watchlist.shows.get(month).push({...item, type});
+
+                            // Ajouter la série à l'année en cours si elle n'est pas encore sortie
+                            const currentYear = new Date().getFullYear();
+                            if (year > currentYear) {
+                                if (!groupedContent[currentYear].watchlist.shows.has(month)) {
+                                    groupedContent[currentYear].watchlist.shows.set(month, []);
+                                }
+                                groupedContent[currentYear].watchlist.shows.get(month).push({...item, type});
+                            }
+                        } else {
+                            // Pour les films, on les ajoute uniquement à leur année de sortie
+                            if (!groupedContent[year].watchlist.movies.has(month)) {
+                                groupedContent[year].watchlist.movies.set(month, []);
+                            }
+                            groupedContent[year].watchlist.movies.get(month).push({...item, type});
+                        }
+                    }
+                });
+                console.log('Total watchlist - Films:', totalMovies, 'Séries:', totalShows);
+            }
+
+            return groupedContent;
+        }
+
+        async function fetchAllDetailsForYear(contentByYear, year) {
+            const showDetailsCache = new Map();
+            const movieDetailsCache = new Map();
+            const allShows = new Map();
+            const upcomingSeasonsByDate = new Map();
+
+            // 1. Récupérer toutes les séries de l'historique et de la watchlist
+            const allShowIds = new Set();
+
+            // Ajouter les séries de l'historique
+            if (contentByYear[year].shows) {
+                for (const [showId] of contentByYear[year].shows) {
+                    allShowIds.add(showId);
+                }
+            }
+
+            // Ajouter les séries de la watchlist
+            if (contentByYear[year].watchlist && contentByYear[year].watchlist.shows) {
+                for (const [month, shows] of contentByYear[year].watchlist.shows) {
+                    shows.forEach(show => {
+                        allShowIds.add(show.tmdb_id);
+                    });
+                }
+            }
+
+            // 2. Récupérer les détails de toutes les séries
+            const showDetailsPromises = Array.from(allShowIds).map(async showId => {
+                const details = await fetchShowDetails(showId, 'tv');
+                if (details) {
+                    showDetailsCache.set(showId, details);
+                    
+                    // Initialiser les données de la série
+                    if (!allShows.has(showId)) {
+                        allShows.set(showId, {
+                            id: showId,
+                            seasons: new Map(),
+                            watchlist: false,
+                            inHistory: false,
+                            watchedSeasons: new Set()
+                        });
+                    }
+
+                    // Traiter les saisons
+                    if (details.seasons) {
+                        const showData = allShows.get(showId);
+                        const sortedSeasons = [...details.seasons].sort((a, b) => a.season_number - b.season_number);
+                        
+                        // On garde toutes les saisons qui ont une date de sortie
+                        const validSeasons = sortedSeasons.filter(season => {
+                            try {
+                                if (season.air_date) {
+                                    const airDate = new Date(season.air_date);
+                                    if (!isNaN(airDate.getTime())) {
+                                        const seasonYear = airDate.getFullYear();
+                                        const seasonMonth = airDate.getMonth() + 1;
+                                        
+                                        if (seasonYear > 0 && seasonMonth >= 1 && seasonMonth <= 12) {
+                                            const key = `${seasonYear}-${seasonMonth}`;
+                                            if (!upcomingSeasonsByDate.has(key)) {
+                                                upcomingSeasonsByDate.set(key, []);
+                                            }
+                                            upcomingSeasonsByDate.get(key).push({
+                                                show: details,
+                                                season: season
+                                            });
+                                            return true;
+                                        }
+                                    }
+                                }
+                                return false;
+                            } catch (error) {
+                                console.error(`Erreur de traitement de la date pour ${details.name} S${season.season_number}:`, error);
+                                return false;
+                            }
+                        });
+
+                        // Ajouter les saisons valides à allShows
+                        validSeasons.forEach(season => {
+                            if (!showData.seasons.has(season.season_number)) {
+                                showData.seasons.set(season.season_number, {
+                                    season: season.season_number,
+                                    episodes: []
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+
+            // 3. Récupérer les détails de chaque film
+            const movieDetailsPromises = [];
+            
+            // Films vus
+            contentByYear[year].movies.forEach(movie => {
+                if (movie.tmdb_id && !movieDetailsCache.has(movie.tmdb_id)) {
+                    movieDetailsPromises.push(
+                        fetchMovieDetails(movie.tmdb_id).then(details => {
+                            if (details) {
+                                movieDetailsCache.set(movie.tmdb_id, details);
+                            }
+                        })
+                    );
+                }
+            });
+
+            // Films de la watchlist
+            if (contentByYear[year].watchlist && contentByYear[year].watchlist.movies) {
+                for (const [month, movies] of contentByYear[year].watchlist.movies) {
+                    movies.forEach(movie => {
+                        if (movie.tmdb_id && !movieDetailsCache.has(movie.tmdb_id)) {
+                            movieDetailsPromises.push(
+                                fetchMovieDetails(movie.tmdb_id).then(details => {
+                                    if (details) {
+                                        movieDetailsCache.set(movie.tmdb_id, details);
+                                    }
+                                })
+                            );
+                        }
+                    });
+                }
+            }
+
+            // Attendre que tous les détails soient chargés
+            await Promise.all([...showDetailsPromises, ...movieDetailsPromises]);
+
+            // 4. Mettre à jour les données des séries vues
+            if (contentByYear[year].shows) {
+                for (const [showId, showData] of contentByYear[year].shows) {
+                    if (allShows.has(showId)) {
+                        const show = allShows.get(showId);
+                        show.inHistory = true;
+                        
+                        // Grouper les épisodes par saison
+                        const episodesBySeason = new Map();
+                        showData.episodes.forEach(episode => {
+                            const seasonKey = episode.season_number;
+                            if (!episodesBySeason.has(seasonKey)) {
+                                episodesBySeason.set(seasonKey, []);
+                            }
+                            episodesBySeason.get(seasonKey).push(episode);
+                        });
+
+                        // Ajouter les épisodes groupés à allShows
+                        for (const [seasonNumber, episodes] of episodesBySeason) {
+                            show.seasons.set(seasonNumber, {
+                                season: seasonNumber,
+                                episodes: episodes
+                            });
+                            show.watchedSeasons.add(seasonNumber);
+                        }
+                    }
+                }
+            }
+
+            // 5. Mettre à jour les données des séries de la watchlist
+            if (contentByYear[year].watchlist && contentByYear[year].watchlist.shows) {
+                for (const [month, shows] of contentByYear[year].watchlist.shows) {
+                    shows.forEach(show => {
+                        if (allShows.has(show.tmdb_id)) {
+                            allShows.get(show.tmdb_id).watchlist = true;
+                        }
+                    });
+                }
+            }
+
+            return {
+                showDetailsCache,
+                movieDetailsCache,
+                allShows,
+                upcomingSeasonsByDate
+            };
+        }
+
+        async function displayShows(showsData, showsGrid) {
+            // 1. Préparation de tous les éléments DOM
+            const showElements = [];
+            
+            for (const show of showsData) {
+                console.log(`\nPréparation des éléments pour ${show.details.name}:`);
+                console.log('show.watchedEpisodes:', show.watchedEpisodes);
+
+                for (const season of show.seasons) {
+                    console.log(`\nPréparation de ${show.details.name} - Saison ${season.season_number}:`);
+                    const seasonData = show.watchedEpisodes.get(season.season_number);
+                    console.log('seasonData:', seasonData);
+                    const sortedEpisodes = seasonData?.episodes || [];
+                    console.log('sortedEpisodes:', sortedEpisodes);
+                    console.log('Nombre d\'épisodes vus:', sortedEpisodes.length);
+                    console.log('Nombre total d\'épisodes:', season.episode_count);
+                    console.log('Date de sortie:', season.air_date);
+
+                    const showItem = document.createElement('div');
+                    showItem.className = 'show-item';
+                    if (show.watchlist) {
+                        showItem.classList.add('watchlist-item');
+                    }
+                    if (sortedEpisodes.length === 0) {
+                        showItem.classList.add('upcoming-season');
+                    }
+                    showItem.setAttribute('data-show-id', show.details.id);
+                    showItem.setAttribute('data-season', season.season_number);
+                    
+                    const posterPlaceholder = document.createElement('div');
+                    posterPlaceholder.className = 'movie-poster-placeholder loading';
+                    posterPlaceholder.textContent = '...';
+                    showItem.appendChild(posterPlaceholder);
+
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'movie-tooltip';
+                    
+                    const watchedEpisodesCount = sortedEpisodes.length;
+                    const totalEpisodes = season.episode_count || season.episodes?.length || 0;
+                    const progress = totalEpisodes > 0 ? Math.round((watchedEpisodesCount / totalEpisodes) * 100) : 0;
+                    
+                    console.log('patata:', sortedEpisodes);
+
+                    tooltip.innerHTML = `
+                        <div class="movie-title">${show.details.name}</div>
+                        <div class="movie-season">Saison ${season.season_number} - Sortie le ${new Date(season.air_date).toLocaleDateString('fr-FR')}</div>
+                        <div class="movie-details">
+                            <p><strong>Note:</strong> ${show.details.vote_average}/10</p>
+                            <p><strong>Progression:</strong> ${watchedEpisodesCount}/${totalEpisodes} épisodes (${progress}%)</p>
+                            ${season.overview ? `<p><strong>Résumé:</strong> ${season.overview}</p>` : ''}
+                            ${sortedEpisodes.length > 0 ? `
+                                <p><strong>Épisodes vus:</strong></p>
+                                <ul style="list-style: none; padding-left: 0; margin: 5px 0;">
+                                    ${sortedEpisodes.map(ep => `
+                                        <li>${ep.season_number}x${ep.episode_number.toString().padStart(2, '0')} - ${ep.episode_title} (vu le ${new Date(ep.watched_at).toLocaleDateString('fr-FR')})</li>
+                                    `).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `;
+                    showItem.appendChild(tooltip);
+
+                    // Stocker l'élément et ses données pour le chargement des images
+                    showElements.push({
+                        element: showItem,
+                        posterPath: season.poster_path || show.details.poster_path,
+                        showName: show.details.name,
+                        seasonNumber: season.season_number,
+                        posterPlaceholder,
+                        seasonData,
+                        season
+                    });
+                }
+            }
+
+            // 2. Tri des éléments avant l'ajout au DOM
+            showElements.sort((a, b) => {
+                // Obtenir la date de référence pour chaque élément
+                const getReferenceDate = (element) => {
+                    const episodes = element.seasonData?.episodes || [];
+                    if (episodes.length > 0) {
+                        // Si des épisodes ont été vus, prendre la date de visionnage la plus récente
+                        return Math.max(...episodes.map(ep => new Date(ep.watched_at).getTime()));
+                    } else {
+                        // Sinon, utiliser la date de sortie de la saison
+                        return new Date(element.season.air_date).getTime();
+                    }
+                };
+
+                const dateA = getReferenceDate(a);
+                const dateB = getReferenceDate(b);
+
+                // Trier par date décroissante (plus récent en premier)
+                return -(dateB - dateA);
+            });
+
+            // 3. Ajout de tous les éléments au DOM
+            showElements.forEach(({element}) => {
+                showsGrid.appendChild(element);
+            });
+
+            // 4. Chargement des images
+            showElements.forEach(({element, posterPath, showName, seasonNumber, posterPlaceholder, seasonData}) => {
+                if (posterPath) {
+                    const img = new Image();
+                    img.src = `https://image.tmdb.org/t/p/w500${posterPath}`;
+                    img.onload = () => {
+                        img.className = 'movie-poster';
+                        img.alt = showName;
+                        img.classList.add('loaded');
+                        posterPlaceholder.replaceWith(img);
+                    };
+                } else {
+                    posterPlaceholder.classList.remove('loading');
+                    posterPlaceholder.textContent = `${showName} S${seasonNumber}`;
+                }
+            });
+        }
+
+        async function displayCalendar(content, watchlist) {
+            const container = document.getElementById('calendar-container');
+            const contentByYear = groupContentByYear(content, watchlist);
+
+            // Créer une liste de toutes les années
+            const allYears = new Set([
+                ...Object.keys(contentByYear)
+            ]);
+
+            // Trier les années dans l'ordre décroissant
+            const sortedYears = Array.from(allYears).sort((a, b) => b - a).filter(year => year <= 2025);
+
+            // Créer les sections pour chaque année
+            for (const year of sortedYears) {
+                const yearSection = document.createElement('div');
+                yearSection.className = 'year-section';
+                yearSection.setAttribute('data-year', year);
+
+                // Initialiser contentByYear pour cette année si elle n'existe pas
+                if (!contentByYear[year]) {
+                    contentByYear[year] = {
+                        movies: [],
+                        shows: new Map(),
+                        watchlist: {
+                            movies: new Map(),
+                            shows: new Map()
+                        }
+                    };
+                }
+
+                const yearTitle = document.createElement('h2');
+                yearTitle.className = 'year-title';
+                yearTitle.innerHTML = `
+                    ${year}
+                    <span class="year-stats">
+                        ${contentByYear[year].movies.length} films, ${contentByYear[year].shows.size} saisons
+                    </span>
+                `;
+                yearSection.appendChild(yearTitle);
+
+                // Charger tous les détails pour cette année
+                const { showDetailsCache, movieDetailsCache, allShows, upcomingSeasonsByDate } = await fetchAllDetailsForYear(contentByYear, year);
+
+                // Section des films
+                const moviesSection = document.createElement('div');
+                moviesSection.className = 'content-section';
+                const moviesTitle = document.createElement('h3');
+                moviesTitle.className = 'section-title';
+                moviesTitle.textContent = 'Films';
+                moviesSection.appendChild(moviesTitle);
+
+                const calendarGrid = document.createElement('div');
+                calendarGrid.className = 'calendar-grid';
+                moviesSection.appendChild(calendarGrid);
+
+                // Section des séries
+                const showsSection = document.createElement('div');
+                showsSection.className = 'content-section';
+                const showsTitle = document.createElement('h3');
+                showsTitle.className = 'section-title';
+                showsTitle.textContent = 'Séries';
+                showsSection.appendChild(showsTitle);
+
+                const showsGrid = document.createElement('div');
+                showsGrid.className = 'shows-grid';
+                showsSection.appendChild(showsGrid);
+
+                // Créer les colonnes pour chaque mois
+                for (let month = 1; month <= 12; month++) {
+                    const monthColumn = document.createElement('div');
+                    monthColumn.className = 'month-column';
+                    
+                    const monthMovies = contentByYear[year].movies.filter(movie => {
+                        const date = new Date(movie.watched_at);
+                        return date.getMonth() + 1 === month;
+                    });
+
+                    const monthShows = new Set();
+                    contentByYear[year].shows.forEach((showData, showId) => {
+                        showData.episodes.forEach(episode => {
+                            const date = new Date(episode.watched_at);
+                            if (date.getMonth() + 1 === month) {
+                                monthShows.add(`${showId}_${episode.season_number}`);
+                            }
+                        });
+                    });
+
+                    // Récupérer les films et séries de la watchlist pour ce mois
+                    const monthWatchlistMovies = contentByYear[year].watchlist.movies.get(month) || [];
+                    const monthWatchlistShows = contentByYear[year].watchlist.shows.get(month) || [];
+                    
+                    const monthTitle = document.createElement('div');
+                    monthTitle.className = 'month-title';
+                    monthTitle.innerHTML = `
+                        ${new Date(2000, month - 1).toLocaleString('fr-FR', { month: 'long' })}
+                        <span class="month-stats">
+                            ${monthMovies.length + monthWatchlistMovies.length + monthWatchlistShows.length}
+                        </span>
+                    `;
+                    monthColumn.appendChild(monthTitle);
+
+                    const moviesGrid = document.createElement('div');
+                    moviesGrid.className = 'movies-grid';
+
+                    // Ajouter les films vus
+                    const movieElements = monthMovies.map(movie => {
+                        const movieItem = document.createElement('div');
+                        movieItem.className = 'movie-item';
+                        
+                        const date = new Date(movie.watched_at);
+                        const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit' });
+
+                        const posterPlaceholder = document.createElement('div');
+                        posterPlaceholder.className = 'movie-poster-placeholder loading';
+                        posterPlaceholder.textContent = '...';
+                        movieItem.appendChild(posterPlaceholder);
+
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'movie-tooltip';
+                        tooltip.innerHTML = `
+                            <div class="movie-title">${movie.title}</div>
+                            <div class="movie-date">Sortie le ${new Date(movie.released).toLocaleDateString('fr-FR')}</div>
+                            <div class="movie-info">
+                                <p><strong>Type:</strong> ${movie.type}</p>
+                                <p><strong>API URL:</strong> /api/serve/${movie.type === 'show' || movie.type === 'tv' ? 'tv' : 'movie'}/${movie.tmdb_id}</p>
+                            </div>
+                        `;
+                        movieItem.appendChild(tooltip);
+
+                        return {
+                            element: movieItem,
+                            movie: movie,
+                            tooltip: tooltip,
+                            posterPlaceholder: posterPlaceholder,
+                            sortDate: date
+                        };
+                    });
+
+                    // Ajouter les films de la watchlist pour ce mois
+                    const watchlistMovieElements = monthWatchlistMovies.map(movie => {
+                        const movieItem = document.createElement('div');
+                        movieItem.className = 'movie-item watchlist-item';
+                        
+                        const posterPlaceholder = document.createElement('div');
+                        posterPlaceholder.className = 'movie-poster-placeholder loading';
+                        posterPlaceholder.textContent = '...';
+                        movieItem.appendChild(posterPlaceholder);
+
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'movie-tooltip';
+                        tooltip.innerHTML = `
+                            <div class="movie-title">${movie.title}</div>
+                            <div class="movie-date">Sortie le ${new Date(movie.released).toLocaleDateString('fr-FR')}</div>
+                            <div class="movie-info">
+                                <p><strong>Type:</strong> ${movie.type}</p>
+                                <p><strong>API URL:</strong> /api/serve/${movie.type === 'show' || movie.type === 'tv' ? 'tv' : 'movie'}/${movie.tmdb_id}</p>
+                            </div>
+                        `;
+                        movieItem.appendChild(tooltip);
+
+                        return {
+                            element: movieItem,
+                            movie: movie,
+                            tooltip: tooltip,
+                            posterPlaceholder: posterPlaceholder,
+                            sortDate: new Date(movie.released)
+                        };
+                    });
+
+                    // Ajouter les séries de la watchlist pour ce mois
+                    const watchlistShowElements = monthWatchlistShows.map(show => {
+                        const movieItem = document.createElement('div');
+                        movieItem.className = 'movie-item watchlist-item';
+                        
+                        const posterPlaceholder = document.createElement('div');
+                        posterPlaceholder.className = 'movie-poster-placeholder loading';
+                        posterPlaceholder.textContent = '...';
+                        movieItem.appendChild(posterPlaceholder);
+
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'movie-tooltip';
+                        tooltip.innerHTML = `
+                            <div class="movie-title">${show.title}</div>
+                            <div class="movie-date">Sortie le ${new Date(show.released).toLocaleDateString('fr-FR')}</div>
+                            <div class="movie-info">
+                                <p><strong>Type:</strong> ${show.type}</p>
+                                <p><strong>API URL:</strong> /api/serve/tv/${show.tmdb_id}</p>
+                            </div>
+                        `;
+                        movieItem.appendChild(tooltip);
+
+                        return {
+                            element: movieItem,
+                            movie: show,
+                            tooltip: tooltip,
+                            posterPlaceholder: posterPlaceholder,
+                            sortDate: new Date(show.released)
+                        };
+                    });
+
+                    // Ajouter les séries vues pour ce mois
+                    const monthShowElements = Array.from(monthShows).map(showKey => {
+                        const [showId, seasonNumber] = showKey.split('_');
+                        const showData = contentByYear[year].shows.get(showId);
+                        if (!showData) return null;
+
+                        // Récupérer uniquement les épisodes vus dans ce mois
+                        const monthEpisodes = showData.episodes.filter(ep => {
+                            const watchDate = new Date(ep.watched_at);
+                            return watchDate.getMonth() + 1 === month && ep.season_number === parseInt(seasonNumber);
+                        });
+
+                        // Trier les épisodes par numéro
+                        const sortedEpisodes = monthEpisodes.sort((a, b) => a.episode_number - b.episode_number);
+
+                        // Calculer la date de référence (dernier épisode vu ou date de sortie)
+                        const getReferenceDate = (episodes, airDate) => {
+                            if (episodes.length > 0) {
+                                return Math.max(...episodes.map(ep => new Date(ep.watched_at).getTime()));
+                            } else {
+                                return new Date(airDate).getTime();
+                            }
+                        };
+
+                        const movieItem = document.createElement('div');
+                        movieItem.className = 'movie-item';
+                        if (sortedEpisodes.length === 0) {
+                            movieItem.classList.add('upcoming-season');
+                        }
+                        
+                        const posterPlaceholder = document.createElement('div');
+                        posterPlaceholder.className = 'movie-poster-placeholder loading';
+                        posterPlaceholder.textContent = '...';
+                        movieItem.appendChild(posterPlaceholder);
+
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'movie-tooltip';
+                        tooltip.innerHTML = `
+                            <div class="movie-title">Chargement...</div>
+                            <div class="movie-date">Saison ${seasonNumber}</div>
+                            <div class="movie-info">
+                                <p><strong>Type:</strong> tv</p>
+                                <p><strong>API URL:</strong> /api/serve/tv/${showId}</p>
+                                <p><strong>Épisodes vus ce mois:</strong></p>
+                                <ul style="list-style: none; padding-left: 0; margin: 5px 0;">
+                                    ${sortedEpisodes.map(ep => `
+                                        <li>${ep.season_number}x${ep.episode_number.toString().padStart(2, '0')} - ${ep.episode_title} (vu le ${new Date(ep.watched_at).toLocaleDateString('fr-FR')})</li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `;
+                        movieItem.appendChild(tooltip);
+
+                        return {
+                            element: movieItem,
+                            movie: {
+                                tmdb_id: showId,
+                                type: 'tv',
+                                season: seasonNumber,
+                                episodes: sortedEpisodes
+                            },
+                            tooltip: tooltip,
+                            posterPlaceholder: posterPlaceholder,
+                            sortDate: getReferenceDate(sortedEpisodes, showData.air_date)
+                        };
+                    }).filter(Boolean);
+
+                    // Combiner et trier tous les éléments par date
+                    const allElements = [...movieElements, ...watchlistMovieElements, ...watchlistShowElements, ...monthShowElements];
+                    allElements.sort((a, b) => b.sortDate - a.sortDate);
+
+                    // Ajouter les éléments triés à la grille
+                    allElements.forEach(item => {
+                        moviesGrid.appendChild(item.element);
+
+                        // Charger les détails du film/série
+                        if (item.movie.tmdb_id) {
+                            const type = item.movie.type === 'show' || item.movie.type === 'tv' ? 'tv' : 'movie';
+                            const details = type === 'movie' ? movieDetailsCache.get(item.movie.tmdb_id) : showDetailsCache.get(item.movie.tmdb_id);
+                            
+                            if (details) {
+                                // Mettre à jour le tooltip
+                                if (type === 'movie') {
+                                    item.tooltip.innerHTML = `
+                                        <div class="movie-title">${details.title}</div>
+                                        <div class="movie-date">Sortie le ${new Date(details.release_date).toLocaleDateString('fr-FR')}</div>
+                                        <div class="movie-info">
+                                            <p><strong>Type:</strong> ${item.movie.type}</p>
+                                            <p><strong>Note:</strong> ${details.vote_average}/10</p>
+                                            <p><strong>Durée:</strong> ${details.runtime} min</p>
+                                        </div>
+                                    `;
+                                } else {
+                                    // Pour les séries, on cherche la saison spécifique
+                                    const season = details.seasons.find(s => s.season_number === parseInt(item.movie.season));
+                                    if (season) {
+                                        item.tooltip.innerHTML = `
+                                            <div class="movie-title">${details.name}</div>
+                                            <div class="movie-date">Saison ${season.season_number} - Sortie le ${new Date(season.air_date).toLocaleDateString('fr-FR')}</div>
+                                            <div class="movie-info">
+                                                <p><strong>Type:</strong> ${item.movie.type}</p>
+                                                <p><strong>Note:</strong> ${details.vote_average}/10</p>
+                                                <p><strong>Nombre d'épisodes:</strong> ${season.episode_count}</p>
+                                                ${item.movie.episodes ? `
+                                                    <p><strong>Épisodes vus ce mois:</strong></p>
+                                                    <ul style="list-style: none; padding-left: 0; margin: 5px 0;">
+                                                        ${item.movie.episodes.map(ep => `
+                                                            <li>${ep.season_number}x${ep.episode_number.toString().padStart(2, '0')} - ${ep.episode_title} (vu le ${new Date(ep.watched_at).toLocaleDateString('fr-FR')})</li>
+                                                        `).join('')}
+                                                    </ul>
+                                                ` : ''}
+                                            </div>
+                                        `;
+                                    }
+                                }
+
+                                // Charger le poster
+                                const posterPath = type === 'movie' ? details.poster_path : 
+                                    (details.seasons && details.seasons.find(s => s.season_number === parseInt(item.movie.season))?.poster_path || details.poster_path);
+                                
+                                if (posterPath) {
+                                    const img = new Image();
+                                    img.src = `https://image.tmdb.org/t/p/w500${posterPath}`;
+                                    img.onload = () => {
+                                        img.className = 'movie-poster';
+                                        img.alt = type === 'movie' ? details.title : details.name;
+                                        img.classList.add('loaded');
+                                        item.posterPlaceholder.replaceWith(img);
+                                    };
+                                } else {
+                                    item.posterPlaceholder.classList.remove('loading');
+                                    item.posterPlaceholder.textContent = type === 'movie' ? details.title : `${details.name} S${item.movie.season}`;
+                                }
+                            }
+                        }
+                    });
+
+                    // Ajouter les saisons à venir pour ce mois
+                    const monthKey = `${year}-${month}`;
+                    const upcomingSeasons = upcomingSeasonsByDate.get(monthKey) || [];
+                    const processedShows = new Set();
+                    
+                    upcomingSeasons.forEach(({show, season}) => {
+                        const showKey = `${show.id}_${season.season_number}`;
+                        if (!processedShows.has(showKey)) {
+                            processedShows.add(showKey);
+                            
+                            const movieItem = document.createElement('div');
+                            movieItem.className = 'movie-item watchlist-item';
+                            movieItem.setAttribute('data-show-id', show.id);
+                            movieItem.setAttribute('data-season', season.season_number);
+                            
+                            const posterPlaceholder = document.createElement('div');
+                            posterPlaceholder.className = 'movie-poster-placeholder loading';
+                            posterPlaceholder.textContent = '...';
+                            movieItem.appendChild(posterPlaceholder);
+
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'movie-tooltip';
+                            tooltip.innerHTML = `
+                                <div class="movie-title">${show.name}</div>
+                                <div class="movie-date">Saison ${season.season_number} - Sortie le ${new Date(season.air_date).toLocaleDateString('fr-FR')}</div>
+                                <div class="movie-info">
+                                    <p><strong>Type:</strong> Saison non commencée</p>
+                                    <p><strong>Note:</strong> ${show.vote_average}/10</p>
+                                    <p><strong>Nombre d'épisodes:</strong> ${season.episode_count}</p>
+                                </div>
+                            `;
+                            movieItem.appendChild(tooltip);
+
+                            moviesGrid.appendChild(movieItem);
+
+                            // Charger le poster de la saison
+                            if (season.poster_path) {
+                                const img = new Image();
+                                img.src = `https://image.tmdb.org/t/p/w500${season.poster_path}`;
+                                img.onload = () => {
+                                    img.className = 'movie-poster';
+                                    img.alt = show.name;
+                                    img.classList.add('loaded');
+                                    posterPlaceholder.replaceWith(img);
+                                };
+                            } else {
+                                posterPlaceholder.classList.remove('loading');
+                                posterPlaceholder.textContent = `${show.name} S${season.season_number}`;
+                            }
+                        }
+                    });
+
+                    monthColumn.appendChild(moviesGrid);
+                    calendarGrid.appendChild(monthColumn);
+                }
+
+                // Préparer et afficher les données des séries en utilisant les détails déjà chargés
+                const showsData = prepareShowsDataFromCache(allShows, showDetailsCache, year);
+                
+                // Filtrer les saisons pour n'afficher que celles de l'année en cours
+                const filteredShowsData = showsData.map(show => {
+                    // Récupérer toutes les saisons de la série
+                    const allSeasons = show.seasons;
+                    
+                    // Filtrer pour ne garder que les saisons de l'année en cours
+                    const seasonsForYear = allSeasons.filter(season => {
+                        const seasonYear = new Date(season.air_date).getFullYear();
+                        return seasonYear === Number(year);
+                    });
+
+                    // Si la série a des saisons pour cette année, on la garde
+                    if (seasonsForYear.length > 0) {
+                        return {
+                            ...show,
+                            seasons: seasonsForYear
+                        };
+                    }
+                    return null;
+                }).filter(Boolean); // Enlever les séries null
+
+                await displayShows(filteredShowsData, showsGrid);
+
+                yearSection.appendChild(moviesSection);
+                yearSection.appendChild(showsSection);
+                container.appendChild(yearSection);
+            }
+        }
+
+        function prepareShowsDataFromCache(allShows, showDetailsCache, year) {
+            const showsWithDetails = [];
+            
+            // 1. Préparation des données
+            for (const [showId, showData] of allShows) {
+                const details = showDetailsCache.get(showId);
+                if (details) {
+                    console.log(`\nPréparation des données pour ${details.name}:`);
+                    console.log('showData:', showData);
+                    console.log('showData.seasons:', showData.seasons);
+
+                    // On garde toutes les saisons qui ont une date de sortie
+                    const validSeasons = details.seasons
+                        .filter(season => {
+                            // On garde toutes les saisons qui ont une date de sortie
+                            return season.air_date !== null && season.air_date !== undefined && season.air_date !== '';
+                        })
+                        .sort((a, b) => a.season_number - b.season_number);
+
+                    if (validSeasons.length > 0) {
+                        const watchedEpisodesBySeason = new Map();
+                        validSeasons.forEach(season => {
+                            const seasonNumber = season.season_number;
+                            const seasonData = showData.seasons.get(seasonNumber);
+                            const watchedEpisodes = seasonData?.episodes || [];
+                            const sortedEpisodes = watchedEpisodes.sort((a, b) => a.episode_number - b.episode_number);
+                            watchedEpisodesBySeason.set(seasonNumber, {
+                                season: seasonNumber,
+                                episodes: sortedEpisodes
+                            });
+                        });
+
+                        // Pour chaque saison, créer une entrée dans l'année correspondante
+                        validSeasons.forEach(season => {
+                            const seasonYear = new Date(season.air_date).getFullYear();
+                            if (seasonYear === Number(year)) {
+                                showsWithDetails.push({
+                                    details,
+                                    seasons: [season],
+                                    watchlist: showData.watchlist,
+                                    watchedEpisodes: new Map([[season.season_number, watchedEpisodesBySeason.get(season.season_number) || {
+                                        season: season.season_number,
+                                        episodes: []
+                                    }]])
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+
+            // 2. Tri des données
+            showsWithDetails.forEach(show => {
+                show.seasons = show.seasons.map(season => {
+                    const episodes = show.watchedEpisodes.get(season.season_number)?.episodes || [];
+                    const referenceDate = episodes.length > 0
+                        ? Math.max(...episodes.map(ep => new Date(ep.watched_at).getTime()))
+                        : new Date(season.air_date).getTime();
+                    return {
+                        ...season,
+                        referenceDate
+                    };
+                }).sort((a, b) => b.referenceDate - a.referenceDate);
+            });
+
+            return showsWithDetails;
+        }
+
+        function calculateStats(content) {
+            const stats = {
+                byYear: new Map(),
+                byMonth: new Map()
+            };
+
+            content.forEach(item => {
+                const date = new Date(item.watched_at);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const monthKey = `${year}-${month + 1}`;
+
+                // Initialiser les stats pour l'année si nécessaire
+                if (!stats.byYear.has(year)) {
+                    stats.byYear.set(year, {
+                        movies: 0,
+                        seasons: new Set()
+                    });
+                }
+
+                // Initialiser les stats pour le mois si nécessaire
+                if (!stats.byMonth.has(monthKey)) {
+                    stats.byMonth.set(monthKey, {
+                        movies: 0,
+                        seasons: new Set()
+                    });
+                }
+
+                const yearStats = stats.byYear.get(year);
+                const monthStats = stats.byMonth.get(monthKey);
+
+                if (item.type === 'movie') {
+                    yearStats.movies++;
+                    monthStats.movies++;
+                } else if (item.type === 'episode') {
+                    const seasonKey = `${item.tmdb_id}_${item.season_number}`;
+                    yearStats.seasons.add(seasonKey);
+                    monthStats.seasons.add(seasonKey);
+                }
+            });
+
+            return stats;
+        }
+
+        function displayStats(stats) {
+            const container = document.getElementById('stats-container');
+            const statsSection = document.createElement('div');
+            statsSection.className = 'stats-section';
+
+            // Stats par année
+            const yearStatsCard = document.createElement('div');
+            yearStatsCard.className = 'stats-card';
+            yearStatsCard.innerHTML = `
+                <div class="stats-title">Statistiques par année</div>
+                <div class="stats-content">
+                    ${Array.from(stats.byYear.entries())
+                        .sort(([a], [b]) => b - a)
+                        .map(([year, data]) => `
+                            <div class="stats-row">
+                                <span class="stats-label">${year}</span>
+                                <span class="stats-value">
+                                    ${data.movies} films, ${data.seasons.size} saisons
+                                </span>
+                            </div>
+                        `).join('')}
+                </div>
+            `;
+
+            // Stats par mois pour l'année en cours
+            const currentYear = new Date().getFullYear();
+            const monthStatsCard = document.createElement('div');
+            monthStatsCard.className = 'stats-card';
+            monthStatsCard.innerHTML = `
+                <div class="stats-title">Statistiques par mois (${currentYear})</div>
+                <div class="stats-content">
+                    <div class="month-stats">
+                        ${Array.from({length: 12}, (_, i) => {
+                            const monthKey = `${currentYear}-${i + 1}`;
+                            const monthData = stats.byMonth.get(monthKey) || { movies: 0, seasons: new Set() };
+                            return `
+                                <div class="month-stat">
+                                    <div class="month-name">${new Date(2000, i).toLocaleString('fr-FR', { month: 'long' })}</div>
+                                    <div class="month-count">
+                                        ${monthData.movies} films<br>
+                                        ${monthData.seasons.size} saisons
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+
+            statsSection.appendChild(yearStatsCard);
+            statsSection.appendChild(monthStatsCard);
+            container.appendChild(statsSection);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Récupérer le paramètre year de l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedYear = urlParams.get('year');
+
+            const csvData = await fetchCSVData();
+            if (csvData) {
+                const content = parseCSV(csvData.history);
+                const watchlist = parseCSV(csvData.watchlist);
+                
+                // Filtrer le contenu par année si spécifié
+                if (selectedYear) {
+                    const filteredContent = content.filter(item => {
+                        const date = new Date(item.watched_at);
+                        return date.getFullYear().toString() === selectedYear;
+                    });
+                    const filteredWatchlist = watchlist.filter(item => {
+                        if (item.released) {
+                            const date = new Date(item.released);
+                            return date.getFullYear().toString() === selectedYear;
+                        }
+                        return false;
+                    });
+                    displayCalendar(filteredContent, filteredWatchlist);
+                } else {
+                    displayCalendar(content, watchlist);
+                }
+            } else {
+                document.getElementById('calendar-container').innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--accent-color);">
+                        <h2>Erreur de chargement des données</h2>
+                        <p>Impossible de récupérer les données depuis le serveur.</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html> 

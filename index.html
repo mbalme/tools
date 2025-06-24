@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Page Web</title>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent-color: #1db954;
+            --accent-hover: #1ed760;
+            --border-color: #333333;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #f5f5f5;
+                --bg-secondary: #ffffff;
+                --bg-tertiary: #f0f0f0;
+                --text-primary: #333333;
+                --text-secondary: #666666;
+                --border-color: #e0e0e0;
+                --shadow-color: rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background-color: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        .year-section {
+            margin: 16px 0;
+            padding: 16px;
+            background-color: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .year-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+
+        .year-section h3 {
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .year-section h3::after {
+            content: attr(data-count);
+            font-size: 0.7em;
+            background-color: var(--accent-color);
+            color: var(--bg-primary);
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-left: 12px;
+        }
+
+        .section {
+            margin: 12px 0;
+            padding: 12px;
+            background-color: var(--bg-tertiary);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .section h4 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section h4::after {
+            content: attr(data-count);
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        .posters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .poster-item {
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: 70px;
+            height: 105px;
+            border-radius: 6px;
+            overflow: hidden;
+            background-color: var(--bg-tertiary);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .poster-item.not-started {
+            opacity: 0.3;
+            filter: grayscale(0.7);
+        }
+
+        .poster-item.not-started:hover {
+            opacity: 0.3;
+            filter: grayscale(0.5);
+        }
+
+        .poster-item:hover {
+            transform: scale(1.1);
+            z-index: 2;
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 6px;
+            transition: filter 0.3s ease;
+        }
+
+        .poster-item:hover .poster {
+            filter: brightness(1.2);
+        }
+
+        .poster-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.7em;
+            line-height: 1.2;
+            color: var(--text-secondary);
+            word-break: break-word;
+            overflow: hidden;
+            background: linear-gradient(45deg, var(--bg-tertiary), var(--bg-secondary));
+        }
+
+        .not-started-indicator {
+            position: absolute;
+            bottom: 16px;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            color: var(--text-secondary);
+            padding: 2px;
+            text-align: center;
+            font-size: 0.65em;
+            font-weight: 500;
+            display: none;
+        }
+
+        .season-number {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            color: var(--text-primary);
+            padding: 2px;
+            text-align: center;
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 16px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--accent-color);
+            border-radius: 1px;
+            transition: width 0.3s ease;
+        }
+
+        .cache-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 16px;
+            font-size: 0.9em;
+        }
+
+        .clear-cache-btn {
+            background-color: var(--accent-color);
+            color: var(--text-primary);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clear-cache-btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .clear-cache-btn:active {
+            transform: translateY(0);
+        }
+
+        .loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--bg-tertiary);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 16px var(--shadow-color);
+            text-align: center;
+            z-index: 1000;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(8px);
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--bg-secondary);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        [title] {
+            position: relative;
+        }
+
+        [title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-size: 0.85em;
+            white-space: pre-line;
+            z-index: 1000;
+            min-width: 200px;
+            text-align: center;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(8px);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                padding: 12px;
+            }
+
+            .posters-grid {
+                grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+                gap: 6px;
+            }
+
+            .poster-item {
+                width: 60px;
+                height: 90px;
+            }
+
+            .year-section h3 {
+                font-size: 1.2em;
+            }
+        }
+
+        .poster-item.completed {
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 0 8px rgba(29, 185, 84, 0.3);
+        }
+
+        .poster-item.completed::before {
+            content: "✓";
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: var(--accent-color);
+            color: var(--bg-primary);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 2;
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .poster-item.completed:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 12px rgba(29, 185, 84, 0.5);
+        }
+
+        .poster-item.completed .poster {
+            filter: none;
+        }
+
+        .poster-item.completed:hover .poster {
+            filter: none;
+        }
+
+        .timeline-separator {
+            position: relative;
+            margin: 30px 0;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .timeline-separator::before,
+        .timeline-separator::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+            position: relative;
+        }
+
+        .timeline-separator::before {
+            background: linear-gradient(to right, var(--border-color), var(--accent-color));
+        }
+
+        .timeline-separator::after {
+            background: linear-gradient(to left, var(--border-color), var(--accent-color));
+        }
+
+        .timeline-separator span {
+            background-color: var(--bg-secondary);
+            padding: 4px 12px;
+            color: var(--accent-color);
+            font-size: 0.85em;
+            font-weight: 500;
+            border-radius: 12px;
+            border: 1px solid var(--accent-color);
+            white-space: nowrap;
+        }
+
+        .future-item {
+            opacity: 0.7;
+        }
+
+        .future-item:hover {
+            opacity: 1;
+        }
+
+        .poster-item.seen-in-theater {
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+        }
+
+        .poster-item.seen-in-theater::before {
+            content: "🎬";
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: #ffd700;
+            color: var(--bg-primary);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 2;
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .poster-item.seen-in-theater:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+        }
+
+        .poster-item.seen-in-theater .poster {
+            filter: none;
+        }
+
+        .poster-item.seen-in-theater:hover .poster {
+            filter: none;
+        }
+
+        .person-item {
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: var(--bg-tertiary);
+            box-shadow: 0 2px 4px var(--shadow-color);
+            border: 2px solid transparent;
+        }
+
+        .person-item:hover {
+            transform: scale(1.1);
+            z-index: 2;
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .person-item.birth {
+            border-color: #4CAF50;
+        }
+
+        .person-item.death {
+            border-color: #f44336;
+        }
+
+        .person-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            transition: filter 0.3s ease;
+        }
+
+        .person-item:hover .person-photo {
+            filter: brightness(1.2);
+        }
+
+        .person-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.6em;
+            line-height: 1.2;
+            color: var(--text-secondary);
+            word-break: break-word;
+            overflow: hidden;
+            background: linear-gradient(45deg, var(--bg-tertiary), var(--bg-secondary));
+            border-radius: 50%;
+        }
+
+        .person-event-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            color: var(--text-primary);
+            padding: 2px;
+            text-align: center;
+            font-size: 0.65em;
+            font-weight: 500;
+        }
+
+        .person-item.birth .person-event-indicator {
+            background: linear-gradient(to top, rgba(76, 175, 80, 0.9), rgba(76, 175, 80, 0.7));
+        }
+
+        .person-item.death .person-event-indicator {
+            background: linear-gradient(to top, rgba(244, 67, 54, 0.9), rgba(244, 67, 54, 0.7));
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        const contentDictionary = {
+            movies: new Set(),
+            episodes: new Set(),
+            shows: new Set(),
+            movieDetails: new Map(),
+            episodeDetails: new Map(),
+            showDetails: new Map()
+        };
+
+        function wasSeenInTheater(watchedDate, releaseDate) {
+            if (!watchedDate || !releaseDate) return false;
+            
+            const watchDate = new Date(watchedDate);
+            const release = new Date(releaseDate);
+            
+            // Calculer la différence en jours
+            const diffTime = Math.abs(watchDate - release);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // Vérifier si le film a été vu dans les 2 mois (60 jours) après sa sortie
+            return diffDays <= 60;
+        }
+
+        // Définition de l'indicateur de chargement
+        const loadingIndicator = `
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>Chargement des métadonnées...</p>
+            </div>
+        `;
+
+        // Gestionnaire de cache pour les métadonnées
+        const metadataCache = {
+            CACHE_PREFIX: 'trakt_metadata_',
+            CACHE_EXPIRY: 24 * 60 * 60 * 1000, // 24 heures en millisecondes
+            ERROR_PREFIX: 'trakt_metadata_error_',
+            ERROR_EXPIRY: 1 * 60 * 60 * 1000, // 1 heure en millisecondes (réduit de 7 jours à 1 heure)
+
+            // Fonction pour nettoyer les métadonnées et ne garder que l'essentiel
+            cleanMetadata(metadata) {
+                if (!metadata) return null;
+                
+                // Garder uniquement les champs essentiels
+                const essentialFields = {
+                    id: metadata.id,
+                    title: metadata.title,
+                    vote_average: metadata.vote_average,
+                    release_date: metadata.release_date,
+                    release_dates: metadata.release_dates,
+                    first_air_date: metadata.first_air_date,
+                    last_air_date: metadata.last_air_date,
+                    number_of_seasons: metadata.number_of_seasons,
+                    overview: metadata.overview?.substring(0, 200),
+                    poster_path: metadata.poster_path,
+                    seasons: metadata.seasons?.map(season => ({
+                        season_number: season.season_number,
+                        episode_count: season.episode_count,
+                        air_date: season.air_date,
+                        poster_path: season.poster_path
+                    })),
+                    _timestamp: Date.now()
+                };
+
+                return essentialFields;
+            },
+
+            getCacheKey(type, id) {
+                return `${this.CACHE_PREFIX}${type}_${id}`;
+            },
+
+            getErrorKey(type, id) {
+                return `${this.ERROR_PREFIX}${type}_${id}`;
+            },
+
+            isErrorCached(type, id) {
+                try {
+                    const key = this.getErrorKey(type, id);
+                    const errorData = sessionStorage.getItem(key);
+                    if (!errorData) return false;
+
+                    const { timestamp } = JSON.parse(errorData);
+                    return Date.now() - timestamp < this.ERROR_EXPIRY;
+                } catch (error) {
+                    return false;
+                }
+            },
+
+            cacheError(type, id) {
+                try {
+                    const key = this.getErrorKey(type, id);
+                    const errorData = {
+                        timestamp: Date.now()
+                    };
+                    sessionStorage.setItem(key, JSON.stringify(errorData));
+                } catch (error) {
+                    console.error('Erreur lors de la mise en cache de l\'erreur:', error);
+                }
+            },
+
+            getCachedMetadata(type, id) {
+                try {
+                    // Vérifier d'abord si l'erreur est en cache
+                    if (this.isErrorCached(type, id)) {
+                        return null;
+                    }
+
+                    const key = this.getCacheKey(type, id);
+                    const cached = sessionStorage.getItem(key);
+                    if (!cached) return null;
+
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp > this.CACHE_EXPIRY) {
+                        this.clearCachedMetadata(type, id);
+                        return null;
+                    }
+                    return data;
+                } catch (error) {
+                    console.error('Erreur lors de la lecture du cache:', error);
+                    return null;
+                }
+            },
+
+            setCachedMetadata(type, id, metadata) {
+                try {
+                    const key = this.getCacheKey(type, id);
+                    const cacheData = {
+                        data: this.cleanMetadata(metadata),
+                        timestamp: Date.now()
+                    };
+                    sessionStorage.setItem(key, JSON.stringify(cacheData));
+                } catch (error) {
+                    console.error('Erreur lors de l\'écriture du cache:', error);
+                }
+            },
+
+            clearCachedMetadata(type, id) {
+                try {
+                    const key = this.getCacheKey(type, id);
+                    sessionStorage.removeItem(key);
+                } catch (error) {
+                    console.error('Erreur lors de la suppression du cache:', error);
+                }
+            },
+
+            clearAllCache() {
+                try {
+                    // Supprimer toutes les entrées du cache et des erreurs
+                    Object.keys(sessionStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || key.startsWith(this.ERROR_PREFIX)) {
+                            sessionStorage.removeItem(key);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Erreur lors de la suppression du cache:', error);
+                }
+            },
+
+            getCacheSize() {
+                try {
+                    let totalSize = 0;
+                    Object.keys(sessionStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || key.startsWith(this.ERROR_PREFIX)) {
+                            const value = sessionStorage.getItem(key);
+                            if (value) {
+                                totalSize += new Blob([value]).size;
+                            }
+                        }
+                    });
+                    return totalSize;
+                } catch (error) {
+                    console.error('Erreur lors du calcul de la taille du cache:', error);
+                    return 0;
+                }
+            }
+        };
+
+        async function fetchCSV(url) {
+            try {
+                console.log('Tentative de récupération:', url);
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const text = await response.text();
+                console.log('Données reçues:', text.substring(0, 200) + '...');
+                return text;
+            } catch (error) {
+                console.error('Erreur lors de la récupération des données:', error);
+                document.getElementById('historyData').innerHTML = `<p>Erreur lors du chargement: ${error.message}</p>`;
+                return null;
+            }
+        }
+
+        async function fetchPeopleData() {
+            try {
+                console.log('Récupération des données des personnes...');
+                const response = await fetch(wsConfig.buildUrl('api/calBirthday/full'));
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Données des personnes reçues:', data.length, 'personnes');
+                return data;
+            } catch (error) {
+                console.error('Erreur lors de la récupération des données des personnes:', error);
+                return [];
+            }
+        }
+
+        function parseCSV(csv) {
+            try {
+                console.log('Début du parsing CSV');
+                const lines = csv.split('\n');
+                console.log('Nombre de lignes:', lines.length);
+                const headers = parseCSVLine(lines[0]);
+                console.log('En-têtes:', headers);
+                
+                // Map pour grouper les données par jour
+                const dataByDay = new Map();
+                const excessiveDays = new Set();
+
+                // Un seul passage : analyser et grouper par jour
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    
+                    const values = parseCSVLine(lines[i]);
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || '';
+                    });
+
+                    // Ignorer les épisodes de saison 0
+                    if (row.type === 'episode' && parseInt(row.season_number) === 0) continue;
+
+                    // Grouper par jour si on a une date de visionnage
+                    if (row.watched_at) {
+                        const watchDate = new Date(row.watched_at).toLocaleDateString();
+                        
+                        if (!dataByDay.has(watchDate)) {
+                            dataByDay.set(watchDate, {
+                                rows: [],
+                                totalRuntime: 0
+                            });
+                        }
+                        
+                        const dayData = dataByDay.get(watchDate);
+                        dayData.rows.push(row);
+                        
+                        // Calculer le runtime total pour ce jour
+                        const runtime = parseInt(row.runtime) || 0;
+                        dayData.totalRuntime += runtime;
+                        
+                        // Marquer comme excessif si > 1440 minutes (24h)
+                        if (dayData.totalRuntime > 1440) {
+                            excessiveDays.add(watchDate);
+                        }
+                    } else {
+                        // Pour les éléments sans date de visionnage (watchlist), les ajouter directement
+                        if (!dataByDay.has('no_date')) {
+                            dataByDay.set('no_date', {
+                                rows: [],
+                                totalRuntime: 0
+                            });
+                        }
+                        dataByDay.get('no_date').rows.push(row);
+                    }
+                }
+
+                // Construire le résultat final en excluant les jours excessifs
+                const data = [];
+                for (const [day, dayData] of dataByDay) {
+                    if (day === 'no_date' || !excessiveDays.has(day)) {
+                        data.push(...dayData.rows);
+                    }
+                }
+
+                if (excessiveDays.size > 0) {
+                    console.log('Jours de visionnage excessif filtrés:', Array.from(excessiveDays));
+                }
+
+                console.log('Données parsées:', data.length, 'lignes');
+                return data;
+            } catch (error) {
+                console.error('Erreur lors du parsing CSV:', error);
+                return [];
+            }
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            // Ajouter le dernier champ
+            result.push(current.trim());
+            
+            // Nettoyer les guillemets des champs
+            return result.map(field => {
+                if (field.startsWith('"') && field.endsWith('"')) {
+                    return field.slice(1, -1);
+                }
+                return field;
+            });
+        }
+
+        function createTable(data) {
+            if (!data || data.length === 0) return '<p>Aucune donnée disponible</p>';
+
+            const headers = Object.keys(data[0]);
+            let table = '<table><thead><tr>';
+            headers.forEach(header => {
+                table += `<th>${header}</th>`;
+            });
+            table += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                table += '<tr>';
+                headers.forEach(header => {
+                    table += `<td>${row[header] || ''}</td>`;
+                });
+                table += '</tr>';
+            });
+
+            table += '</tbody></table>';
+            return table;
+        }
+
+        function getFrenchReleaseDate(metadata) {
+            console.log('getFrenchReleaseDate appelée avec:', metadata);
+            
+            if (!metadata) {
+                console.log('Pas de métadonnées, retour null');
+                return null;
+            }
+
+            // Si on a déjà une release_date de base, on l'utilise comme fallback
+            const fallbackDate = metadata.release_date;
+            console.log('Date de fallback:', fallbackDate);
+
+            // Vérifier si on a les release_dates avec les informations françaises
+            if (!metadata.release_dates?.results) {
+                console.log('Pas de release_dates.results, utilisation du fallback');
+                return fallbackDate;
+            }
+
+            console.log('Release dates disponibles:', metadata.release_dates.results);
+
+            // Chercher les informations françaises
+            const frRelease = metadata.release_dates.results.find(r => r.iso_3166_1 === 'FR');
+            if (!frRelease) {
+                console.log('Pas d\'informations françaises trouvées, utilisation du fallback');
+                return fallbackDate;
+            }
+
+            console.log('Informations françaises trouvées:', frRelease);
+
+            // Chercher la sortie en salle (type 3)
+            const theatricalRelease = frRelease.release_dates.find(d => d.type === 3);
+            if (theatricalRelease) {
+                console.log('Sortie en salle française trouvée:', theatricalRelease.release_date);
+                return theatricalRelease.release_date;
+            }
+
+            // Si pas de sortie en salle, chercher la première date disponible
+            if (frRelease.release_dates && frRelease.release_dates.length > 0) {
+                const firstRelease = frRelease.release_dates[0];
+                console.log('Première date française disponible:', firstRelease.release_date);
+                return firstRelease.release_date;
+            }
+
+            console.log('Aucune date française trouvée, utilisation du fallback');
+            return fallbackDate;
+        }
+
+        async function fetchMetadata(type, tmdbId, forceRefresh = false) {
+            try {
+                // Vérifier si l'erreur est en cache (sauf si on force le rechargement)
+                if (!forceRefresh && metadataCache.isErrorCached(type, tmdbId)) {
+                    console.log(`Erreur en cache pour ${type} ID: ${tmdbId}, skip de l'appel API`);
+                    return null;
+                }
+
+                const url = wsConfig.buildServeApiUrl(type, tmdbId);
+                console.log('Récupération des métadonnées depuis l\'API:', url);
+                const response = await fetch(url);
+                
+                if (response.status === 404) {
+                    console.warn(`Métadonnées non trouvées pour ${type} ID: ${tmdbId}`);
+                    metadataCache.cacheError(type, tmdbId);
+                    return null;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Métadonnées reçues pour', type, tmdbId, {
+                    data,
+                    seasons: data.seasons,
+                    firstSeason: data.seasons?.[0]
+                });
+
+                // Mettre en cache les nouvelles métadonnées (nettoyées)
+                const cleanedData = metadataCache.cleanMetadata(data);
+                console.log('Métadonnées nettoyées:', {
+                    cleanedData,
+                    seasons: cleanedData?.seasons,
+                    firstSeason: cleanedData?.seasons?.[0]
+                });
+                metadataCache.setCachedMetadata(type, tmdbId, data);
+                return data;
+            } catch (error) {
+                console.error('Erreur lors de la récupération des métadonnées:', error);
+                metadataCache.cacheError(type, tmdbId);
+                return null;
+            }
+        }
+
+        async function processData(csv, source) {
+            if (!csv) return;
+            const data = parseCSV(csv);
+            let processedCount = 0;
+            let errorCount = 0;
+            
+            for (const row of data) {
+                try {
+                    const type = row.type;
+                    
+                    if (type === 'movie') {
+                        const movieId = row.trakt_id || row.tmdb_id;
+                        const key = movieId;
+                        contentDictionary.movies.add(key);
+                        
+                        console.log(`Traitement du film ${row.title} (source: ${source}):`, {
+                            trakt_id: row.trakt_id,
+                            tmdb_id: row.tmdb_id,
+                            movieId: movieId
+                        });
+                        
+                        // Vérifier d'abord le cache
+                        let metadata = metadataCache.getCachedMetadata('movie', row.tmdb_id);
+                        if (!metadata) {
+                            // Si pas en cache, récupérer depuis l'API
+                            metadata = await fetchMetadata('movie', row.tmdb_id);
+                        }
+                        
+                        const frenchReleaseDate = getFrenchReleaseDate(metadata);
+                        console.log(`Film ${row.title} (ID: ${row.tmdb_id}, source: ${source}):`, {
+                            originalReleaseDate: metadata?.release_date,
+                            frenchReleaseDate: frenchReleaseDate,
+                            metadata: metadata
+                        });
+                        
+                        contentDictionary.movieDetails.set(key, {
+                            id: movieId,
+                            title: row.title,
+                            year: row.year,
+                            source: source,
+                            metadata: metadata,
+                            french_release_date: frenchReleaseDate,
+                            ...row
+                        });
+                        processedCount++;
+                    } else if (type === 'episode') {
+                        const showId = row.trakt_id || row.tmdb_id;
+                        const episodeId = row.episode_trakt_id;
+                        const showKey = showId;
+                        const episodeKey = episodeId;
+
+                        contentDictionary.episodes.add(episodeKey);
+                        contentDictionary.episodeDetails.set(episodeKey, {
+                            id: episodeId,
+                            show_id: showId,
+                            show_title: row.title,
+                            season_number: row.season_number,
+                            episode_number: row.episode_number,
+                            episode_title: row.episode_title,
+                            source: source,
+                            ...row
+                        });
+
+                        contentDictionary.shows.add(showKey);
+                        if (!contentDictionary.showDetails.has(showKey)) {
+                            // Vérifier d'abord le cache
+                            let metadata = null;
+                            if (row.tmdb_id && row.tmdb_id.trim() !== '') {
+                                metadata = metadataCache.getCachedMetadata('tv', row.tmdb_id);
+                                if (!metadata) {
+                                    // Si pas en cache, récupérer depuis l'API
+                                    metadata = await fetchMetadata('tv', row.tmdb_id);
+                                }
+                            }
+                            
+                            contentDictionary.showDetails.set(showKey, {
+                                id: showId,
+                                title: row.title,
+                                year: row.year,
+                                metadata: metadata,
+                                episodes: new Set()
+                            });
+                        }
+                        contentDictionary.showDetails.get(showKey).episodes.add(episodeKey);
+                        processedCount++;
+                    } else if (type === 'show') {
+                        const showId = row.trakt_id || row.tmdb_id;
+                        const key = showId;
+                        contentDictionary.shows.add(key);
+                        
+                        // Vérifier d'abord le cache
+                        let metadata = null;
+                        if (row.tmdb_id && row.tmdb_id.trim() !== '') {
+                            metadata = metadataCache.getCachedMetadata('tv', row.tmdb_id);
+                            if (!metadata) {
+                                // Si pas en cache, récupérer depuis l'API
+                                metadata = await fetchMetadata('tv', row.tmdb_id);
+                            }
+                        }
+                        
+                        contentDictionary.showDetails.set(key, {
+                            id: showId,
+                            title: row.title,
+                            year: row.year,
+                            source: source,
+                            metadata: metadata,
+                            ...row
+                        });
+                        processedCount++;
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du traitement de la ligne:', row, error);
+                    errorCount++;
+                }
+            }
+            
+            console.log(`Traitement terminé pour ${source}: ${processedCount} éléments traités, ${errorCount} erreurs`);
+        }
+
+        async function loadData() {
+            console.log('Début du chargement des données');
+            const historyUrl = wsConfig.buildServeUrl('https://trakt.tv/users/mbalme/history.csv?slurm=8236561f53feeaf744ce432345e6b53b%26');
+            const watchlistUrl = wsConfig.buildServeUrl('https://trakt.tv/users/mbalme/watchlist.csv?slurm=8236561f53feeaf744ce432345e6b53b%26');
+
+            try {
+                // Ajouter l'indicateur de chargement
+                document.body.insertAdjacentHTML('beforeend', loadingIndicator);
+                const loadingElement = document.getElementById('loadingIndicator');
+
+                // Ajouter le bouton de vidage du cache
+                const clearCacheButton = `
+                    <div class="section">
+                        <div class="cache-info">
+                            <span>Taille du cache: <span id="cacheSize">0</span> KB</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="metadataCache.clearAllCache(); location.reload();" class="clear-cache-btn">
+                                    Vider le cache des métadonnées
+                                </button>
+                                <button onclick="forceRefreshMetadata();" class="clear-cache-btn" style="background-color: #ff6b35;">
+                                    Forcer le rechargement des métadonnées
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.querySelector('.container').insertAdjacentHTML('afterbegin', clearCacheButton);
+                
+                // Mettre à jour la taille du cache
+                const updateCacheSize = () => {
+                    const size = metadataCache.getCacheSize();
+                    document.getElementById('cacheSize').textContent = (size / 1024).toFixed(2);
+                };
+                updateCacheSize();
+                setInterval(updateCacheSize, 5000);
+
+                console.log('Chargement de l\'historique...');
+                const historyCSV = await fetchCSV(historyUrl);
+                console.log('Chargement de la watchlist...');
+                const watchlistCSV = await fetchCSV(watchlistUrl);
+                console.log('Chargement des données des personnes...');
+                const peopleData = await fetchPeopleData();
+
+                if (historyCSV) {
+                    console.log('Traitement de l\'historique...');
+                    await processData(historyCSV, 'history');
+                }
+
+                if (watchlistCSV) {
+                    console.log('Traitement de la watchlist...');
+                    const watchlistData = parseCSV(watchlistCSV);
+                    console.log('Films de la watchlist:', watchlistData.filter(row => row.type === 'movie').map(row => ({
+                        title: row.title,
+                        trakt_id: row.trakt_id,
+                        tmdb_id: row.tmdb_id
+                    })));
+                    await processData(watchlistCSV, 'watchlist');
+                }
+
+                // Supprimer l'indicateur de chargement
+                loadingElement.remove();
+
+                console.log('Statistiques finales:', {
+                    movies: contentDictionary.movies.size,
+                    episodes: contentDictionary.episodes.size,
+                    shows: contentDictionary.shows.size
+                });
+
+                // Affichage des statistiques
+                const stats = `
+                    <div class="section">
+                        <h2>Statistiques</h2>
+                        <p>Films uniques : ${contentDictionary.movies.size}</p>
+                        <p>Épisodes uniques : ${contentDictionary.episodes.size}</p>
+                        <p>Séries uniques : ${contentDictionary.shows.size}</p>
+                    </div>
+                `;
+                document.querySelector('.container').insertAdjacentHTML('beforeend', stats);
+
+                // Création de la timeline
+                const timeline = document.createElement('div');
+                timeline.className = 'section';
+                timeline.innerHTML = '<h2>Timeline de Visionnage</h2>';
+
+                // Organiser les données par année
+                const timelineData = new Map();
+
+                // Traiter les films
+                for (const [key, movie] of contentDictionary.movieDetails) {
+                    const year = movie.watched_at ? new Date(movie.watched_at).getFullYear() : 
+                               (movie.french_release_date ? new Date(movie.french_release_date).getFullYear() : 
+                               (movie.metadata?.release_date ? new Date(movie.metadata.release_date).getFullYear() : null));
+                    
+                    console.log(`Organisation du film ${movie.title}:`, {
+                        watched_at: movie.watched_at,
+                        french_release_date: movie.french_release_date,
+                        metadata_release_date: movie.metadata?.release_date,
+                        year_used: year
+                    });
+                    
+                    if (year) {
+                        if (!timelineData.has(year)) {
+                            timelineData.set(year, { movies: [], shows: new Map(), people: [] });
+                        }
+                        timelineData.get(year).movies.push(movie);
+                    }
+                }
+
+                // Traiter les personnes
+                if (peopleData && Array.isArray(peopleData) && peopleData.length > 0) {
+                    for (const person of peopleData) {
+                        // Traiter la naissance
+                        if (person.birthday) {
+                            const birthYear = new Date(person.birthday).getFullYear();
+                            if (!timelineData.has(birthYear)) {
+                                timelineData.set(birthYear, { movies: [], shows: new Map(), people: [] });
+                            }
+                            timelineData.get(birthYear).people.push({
+                                ...person,
+                                eventType: 'birth',
+                                eventDate: new Date(person.birthday)
+                            });
+                        }
+
+                        // Traiter la mort
+                        if (person.deathDate) {
+                            const deathYear = new Date(person.deathDate).getFullYear();
+                            if (!timelineData.has(deathYear)) {
+                                timelineData.set(deathYear, { movies: [], shows: new Map(), people: [] });
+                            }
+                            timelineData.get(deathYear).people.push({
+                                ...person,
+                                eventType: 'death',
+                                eventDate: new Date(person.deathDate)
+                            });
+                        }
+                    }
+                }
+
+                // Set pour suivre les saisons déjà traitées
+                const processedSeasons = new Set();
+
+                // Traiter les séries et épisodes
+                for (const [key, show] of contentDictionary.showDetails) {
+                    if (!show.episodes) {
+                        console.warn(`Pas d'épisodes pour la série ${show.title}`);
+                        continue;
+                    }
+
+                    const episodes = Array.from(show.episodes).map(epId => {
+                        const episode = contentDictionary.episodeDetails.get(epId);
+                        if (!episode) {
+                            console.warn(`Épisode ${epId} non trouvé pour la série ${show.title}`);
+                            return null;
+                        }
+                        return episode;
+                    }).filter(ep => ep !== null);
+
+                    // Créer une map des épisodes vus par saison
+                    const watchedEpisodesBySeason = new Map();
+                    const firstWatchedDateBySeason = new Map();
+                    const lastWatchedDateBySeason = new Map();
+
+                    // Analyser les épisodes vus
+                    for (const episode of episodes) {
+                        if (episode.watched_at) {
+                            const seasonNumber = episode.season_number;
+                            // Ignorer les saisons avec season_number = 0
+                            if (seasonNumber === 0) continue;
+
+                            const watchedDate = new Date(episode.watched_at);
+
+                            // Mettre à jour les épisodes vus
+                            if (!watchedEpisodesBySeason.has(seasonNumber)) {
+                                watchedEpisodesBySeason.set(seasonNumber, new Set());
+                            }
+                            watchedEpisodesBySeason.get(seasonNumber).add(episode.episode_number);
+
+                            // Mettre à jour les dates de visionnage
+                            if (!firstWatchedDateBySeason.has(seasonNumber) || 
+                                watchedDate < firstWatchedDateBySeason.get(seasonNumber)) {
+                                firstWatchedDateBySeason.set(seasonNumber, watchedDate);
+                            }
+                            if (!lastWatchedDateBySeason.has(seasonNumber) || 
+                                watchedDate > lastWatchedDateBySeason.get(seasonNumber)) {
+                                lastWatchedDateBySeason.set(seasonNumber, watchedDate);
+                            }
+                        }
+                    }
+
+                    // Grouper les saisons par année
+                    const seasonsByYear = new Map();
+
+                    // Traiter d'abord les saisons vues
+                    for (const [seasonNumber, watchedEpisodes] of watchedEpisodesBySeason) {
+                        // Ignorer les saisons avec season_number = 0
+                        if (seasonNumber === 0) continue;
+
+                        const firstWatchedDate = firstWatchedDateBySeason.get(seasonNumber);
+                        const year = firstWatchedDate.getFullYear();
+                        
+                        if (!seasonsByYear.has(year)) {
+                            seasonsByYear.set(year, new Map());
+                        }
+
+                        // Récupérer le nombre total d'épisodes depuis les métadonnées
+                        const seasonMetadata = show.metadata?.seasons?.find(s => Number(s.season_number) === Number(seasonNumber));
+                        const totalEpisodes = seasonMetadata?.episode_count || 0;
+                        const progress = totalEpisodes > 0 ? (watchedEpisodes.size / totalEpisodes) * 100 : 0;
+
+                        seasonsByYear.get(year).set(seasonNumber, {
+                            show: show,
+                            episodes: Array.from(watchedEpisodes),
+                            total_episodes: totalEpisodes,
+                            progress: progress,
+                            first_watched: firstWatchedDate,
+                            last_watched: lastWatchedDateBySeason.get(seasonNumber),
+                            is_watched: true
+                        });
+
+                        // Marquer la saison comme traitée
+                        processedSeasons.add(`${show.id}_${seasonNumber}`);
+                    }
+
+                    // Traiter ensuite les saisons non vues
+                    if (show.metadata?.seasons) {
+                        for (const season of show.metadata.seasons) {
+                            // Ignorer les saisons avec season_number = 0
+                            if (season.season_number === 0) continue;
+
+                            if (season.air_date) {
+                                const [yearStr, month, day] = season.air_date.split('-').map(Number);
+                                const airDate = new Date(yearStr, month - 1, day);
+                                const yearNum = airDate.getFullYear();
+                                const seasonNumber = season.season_number;
+                                
+                                // Ne pas ajouter si la saison a déjà été traitée (vue ou non vue)
+                                const seasonKey = `${show.id}_${seasonNumber}`;
+                                if (!processedSeasons.has(seasonKey)) {
+                                    if (!seasonsByYear.has(yearNum)) {
+                                        seasonsByYear.set(yearNum, new Map());
+                                    }
+                                    
+                                    // Ne pas ajouter si la saison existe déjà dans l'année
+                                    if (!seasonsByYear.get(yearNum).has(seasonNumber)) {
+                                        seasonsByYear.get(yearNum).set(seasonNumber, {
+                                            show: show,
+                                            episodes: [],
+                                            total_episodes: season.episode_count || 0,
+                                            progress: 0,
+                                            air_date: airDate,
+                                            is_watched: false
+                                        });
+                                        processedSeasons.add(seasonKey);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Ajouter les saisons à la timeline
+                    for (const [year, seasons] of seasonsByYear) {
+                        if (!timelineData.has(year)) {
+                            timelineData.set(year, { movies: [], shows: new Map(), people: [] });
+                        }
+                        timelineData.get(year).shows.set(show.id, {
+                            show: show,
+                            seasons: seasons
+                        });
+                    }
+                }
+
+                // Ajouter les séries de la watchlist qui n'ont pas encore été commencées
+                for (const [key, show] of contentDictionary.showDetails) {
+                    if (show.source === 'watchlist' && show.metadata?.seasons) {
+                        for (const season of show.metadata.seasons) {
+                            // Ignorer les saisons avec season_number = 0
+                            if (season.season_number === 0) continue;
+
+                            if (season.air_date) {
+                                const [yearStr, month, day] = season.air_date.split('-').map(Number);
+                                const airDate = new Date(yearStr, month - 1, day);
+                                const yearNum = airDate.getFullYear();
+                                const seasonNumber = season.season_number;
+
+                                // Vérifier si la saison n'est pas déjà dans la timeline
+                                const seasonKey = `${show.id}_${seasonNumber}`;
+                                if (!processedSeasons.has(seasonKey)) {
+                                    if (!timelineData.has(yearNum)) {
+                                        timelineData.set(yearNum, { movies: [], shows: new Map(), people: [] });
+                                    }
+                                    if (!timelineData.get(yearNum).shows.has(show.id)) {
+                                        timelineData.get(yearNum).shows.set(show.id, {
+                                            show: show,
+                                            seasons: new Map()
+                                        });
+                                    }
+                                    timelineData.get(yearNum).shows.get(show.id).seasons.set(seasonNumber, {
+                                        show: show,
+                                        episodes: [],
+                                        total_episodes: season.episode_count || 0,
+                                        progress: 0,
+                                        air_date: airDate,
+                                        is_watched: false
+                                    });
+                                    processedSeasons.add(seasonKey);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Trier les années par ordre décroissant
+                const sortedYears = Array.from(timelineData.keys()).sort((a, b) => b - a);
+
+                // Générer le HTML pour chaque année
+                for (const year of sortedYears) {
+                    const yearData = timelineData.get(year);
+                    const yearSection = document.createElement('div');
+                    yearSection.className = 'year-section';
+                    
+                    // Calculer le nombre total d'éléments pour l'année
+                    const totalItems = yearData.movies.length + 
+                        Array.from(yearData.shows.values())
+                            .reduce((total, show) => total + show.seasons.size, 0) +
+                        yearData.people.length;
+                    
+                    const currentYear = new Date().getFullYear();
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // Fonction pour trier les éléments par date
+                    const sortByDate = (a, b) => {
+                        const dateA = a.watched_at ? new Date(a.watched_at) : new Date(a.french_release_date || a.metadata?.release_date);
+                        const dateB = b.watched_at ? new Date(b.watched_at) : new Date(b.french_release_date || b.metadata?.release_date);
+                        return dateA - dateB;
+                    };
+
+                    // Fonction pour séparer les éléments passés et futurs
+                    const separatePastAndFuture = (items) => {
+                        const past = [];
+                        const future = [];
+                        items.forEach(item => {
+                            let date;
+                            if ('sortDate' in item) {
+                                date = item.sortDate;
+                            } else {
+                                date = item.watched_at ? new Date(item.watched_at) : new Date(item.french_release_date || item.metadata?.release_date);
+                            }
+                            if (date <= today) {
+                                past.push(item);
+                            } else {
+                                future.push(item);
+                            }
+                        });
+                        return { past, future };
+                    };
+
+                    yearSection.innerHTML = `
+                        <h3 data-count="${totalItems} éléments">${year}</h3>
+                        <div class="year-content">
+                            <div class="section">
+                                <h4 data-count="${yearData.movies.length} films">Films</h4>
+                                <div class="posters-grid">
+                                    ${(() => {
+                                        if (year === currentYear) {
+                                            const { past, future } = separatePastAndFuture(yearData.movies);
+                                            return `
+                                                ${past.sort(sortByDate).map(movie => {
+                                                    const seenInTheater = movie.watched_at && movie.french_release_date && 
+                                                        (new Date(movie.watched_at) - new Date(movie.french_release_date)) / (1000 * 60 * 60 * 24) <= 60;
+                                                    return `
+                                                        <div class="poster-item ${!movie.watched_at ? 'not-started' : ''} ${seenInTheater ? 'seen-in-theater' : ''}" title="${movie.metadata?.title || movie.title}
+Vu le: ${movie.watched_at ? new Date(movie.watched_at).toLocaleDateString() : 'Non vu'}
+Sorti le: ${movie.french_release_date ? new Date(movie.french_release_date).toLocaleDateString() : (movie.metadata?.release_date ? new Date(movie.metadata.release_date).toLocaleDateString() : 'Date inconnue')}
+${seenInTheater ? 'Vu au cinéma !' : ''}">
+                                                            ${movie.metadata?.poster_path ? 
+                                                                `<img src="https://image.tmdb.org/t/p/w92${movie.metadata.poster_path}" 
+                                                                      alt="${movie.metadata?.title || movie.title}"
+                                                                      class="poster"
+                                                                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'poster-placeholder\'>${movie.metadata?.title || movie.title}</div>'">` :
+                                                                `<div class="poster-placeholder">${movie.metadata?.title || movie.title}</div>`
+                                                            }
+                                                            ${!movie.watched_at ? `<div class="not-started-indicator">Non vu</div>` : ''}
+                                                        </div>
+                                                    `;
+                                                }).join('')}
+                                                ${future.length > 0 ? `
+                                                    <div class="timeline-separator"><span>À venir</span></div>
+                                                    ${future.sort(sortByDate).map(movie => {
+                                                        const seenInTheater = movie.watched_at && movie.french_release_date && 
+                                                            (new Date(movie.watched_at) - new Date(movie.french_release_date)) / (1000 * 60 * 60 * 24) <= 60;
+                                                        return `
+                                                            <div class="poster-item future-item ${!movie.watched_at ? 'not-started' : ''} ${seenInTheater ? 'seen-in-theater' : ''}" title="${movie.metadata?.title || movie.title}
+Vu le: ${movie.watched_at ? new Date(movie.watched_at).toLocaleDateString() : 'Non vu'}
+Sorti le: ${movie.french_release_date ? new Date(movie.french_release_date).toLocaleDateString() : (movie.metadata?.release_date ? new Date(movie.metadata.release_date).toLocaleDateString() : 'Date inconnue')}
+${seenInTheater ? 'Vu au cinéma !' : ''}">
+                                                                ${movie.metadata?.poster_path ? 
+                                                                    `<img src="https://image.tmdb.org/t/p/w92${movie.metadata.poster_path}" 
+                                                                          alt="${movie.metadata?.title || movie.title}"
+                                                                          class="poster"
+                                                                          onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'poster-placeholder\'>${movie.metadata?.title || movie.title}</div>'">` :
+                                                                    `<div class="poster-placeholder">${movie.metadata?.title || movie.title}</div>`
+                                                                }
+                                                                ${!movie.watched_at ? `<div class="not-started-indicator">Non vu</div>` : ''}
+                                                            </div>
+                                                        `;
+                                                    }).join('')}
+                                                ` : ''}
+                                            `;
+                                        } else {
+                                            return yearData.movies
+                                                .sort(sortByDate)
+                                                .map(movie => {
+                                                    const seenInTheater = movie.watched_at && movie.french_release_date && 
+                                                        (new Date(movie.watched_at) - new Date(movie.french_release_date)) / (1000 * 60 * 60 * 24) <= 60;
+                                                    return `
+                                                        <div class="poster-item ${!movie.watched_at ? 'not-started' : ''} ${seenInTheater ? 'seen-in-theater' : ''}" title="${movie.metadata?.title || movie.title}
+Vu le: ${movie.watched_at ? new Date(movie.watched_at).toLocaleDateString() : 'Non vu'}
+Sorti le: ${movie.french_release_date ? new Date(movie.french_release_date).toLocaleDateString() : (movie.metadata?.release_date ? new Date(movie.metadata.release_date).toLocaleDateString() : 'Date inconnue')}
+${seenInTheater ? 'Vu au cinéma !' : ''}">
+                                                            ${movie.metadata?.poster_path ? 
+                                                                `<img src="https://image.tmdb.org/t/p/w92${movie.metadata.poster_path}" 
+                                                                      alt="${movie.metadata?.title || movie.title}"
+                                                                      class="poster"
+                                                                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'poster-placeholder\'>${movie.metadata?.title || movie.title}</div>'">` :
+                                                                `<div class="poster-placeholder">${movie.metadata?.title || movie.title}</div>`
+                                                            }
+                                                            ${!movie.watched_at ? `<div class="not-started-indicator">Non vu</div>` : ''}
+                                                        </div>
+                                                    `;
+                                                }).join('');
+                                        }
+                                    })()}
+                                </div>
+                            </div>
+                            <div class="section">
+                                <h4 data-count="${Array.from(yearData.shows.values()).reduce((total, show) => total + show.seasons.size, 0)} séries">Séries</h4>
+                                <div class="posters-grid">
+                                    ${(() => {
+                                        if (year === currentYear) {
+                                            const allSeasons = Array.from(yearData.shows.values())
+                                                .flatMap(showData => 
+                                                    Array.from(showData.seasons.entries())
+                                                        .map(([seasonNumber, seasonData]) => ({
+                                                            show: showData.show,
+                                                            seasonNumber,
+                                                            seasonData,
+                                                            sortDate: seasonData.is_watched ? 
+                                                                seasonData.first_watched : 
+                                                                seasonData.air_date
+                                                        }))
+                                                );
+
+                                            const { past, future } = separatePastAndFuture(allSeasons);
+
+                                            return `
+                                                ${past.sort((a, b) => a.sortDate - b.sortDate).map(({ show, seasonNumber, seasonData }) => {
+                                                    const seasonMetadata = show.metadata?.seasons?.find(s => Number(s.season_number) === Number(seasonNumber));
+                                                    const posterPath = seasonMetadata?.poster_path || show.metadata?.poster_path;
+                                                    
+                                                    return `
+                                                        <div class="poster-item ${!seasonData.is_watched ? 'not-started' : ''} ${seasonData.progress === 100 ? 'completed' : ''}" 
+                                                             title="${show.metadata?.name || show.title} - Saison ${seasonNumber}
+${seasonData.is_watched ? 
+`Épisodes vus: ${seasonData.episodes.length}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
+Premier épisode vu: ${seasonData.first_watched.toLocaleDateString()}
+Dernier épisode vu: ${seasonData.last_watched.toLocaleDateString()}` :
+`Sortie le: ${seasonData.air_date.toLocaleDateString()}
+${seasonData.total_episodes} épisodes`}">
+                                                            ${posterPath ? 
+                                                                `<img src="https://image.tmdb.org/t/p/w92${posterPath}" 
+                                                                      alt="${show.metadata?.name || show.title} - Saison ${seasonNumber}"
+                                                                      class="poster"
+                                                                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'poster-placeholder\'>${show.metadata?.name || show.title}<br>S${seasonNumber}</div>'">` :
+                                                                `<div class="poster-placeholder">${show.metadata?.name || show.title}<br>S${seasonNumber}</div>`
+                                                            }
+                                                            <div class="season-number">S${seasonNumber}</div>
+                                                            ${seasonData.is_watched ? 
+                                                                `<div class="progress-bar" style="width: ${seasonData.progress}%"></div>` : 
+                                                                `<div class="not-started-indicator">Non commencée</div>`}
+                                                        </div>
+                                                    `;
+                                                }).join('')}
+                                                ${future.length > 0 ? `
+                                                    <div class="timeline-separator"><span>À venir</span></div>
+                                                    ${future.sort((a, b) => a.sortDate - b.sortDate).map(({ show, seasonNumber, seasonData }) => {
+                                                        const seasonMetadata = show.metadata?.seasons?.find(s => Number(s.season_number) === Number(seasonNumber));
+                                                        const posterPath = seasonMetadata?.poster_path || show.metadata?.poster_path;
+                                                        
+                                                        return `
+                                                            <div class="poster-item future-item ${!seasonData.is_watched ? 'not-started' : ''} ${seasonData.progress === 100 ? 'completed' : ''}" 
+                                                                 title="${show.metadata?.name || show.title} - Saison ${seasonNumber}
+${seasonData.is_watched ? 
+`Épisodes vus: ${seasonData.episodes.length}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
+Premier épisode vu: ${seasonData.first_watched.toLocaleDateString()}
+Dernier épisode vu: ${seasonData.last_watched.toLocaleDateString()}` :
+`Sortie le: ${seasonData.air_date.toLocaleDateString()}
+${seasonData.total_episodes} épisodes`}">
+                                                                ${posterPath ? 
+                                                                    `<img src="https://image.tmdb.org/t/p/w92${posterPath}" 
+                                                                          alt="${show.metadata?.name || show.title} - Saison ${seasonNumber}"
+                                                                          class="poster"
+                                                                          onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'poster-placeholder\'>${show.metadata?.name || show.title}<br>S${seasonNumber}</div>'">` :
+                                                                    `<div class="poster-placeholder">${show.metadata?.name || show.title}<br>S${seasonNumber}</div>`
+                                                                }
+                                                                <div class="season-number">S${seasonNumber}</div>
+                                                                ${seasonData.is_watched ? 
+                                                                    `<div class="progress-bar" style="width: ${seasonData.progress}%"></div>` : 
+                                                                    `<div class="not-started-indicator">Non commencée</div>`}
+                                                            </div>
+                                                        `;
+                                                    }).join('')}
+                                                ` : ''}
+                                            `;
+                                        } else {
+                                            return Array.from(yearData.shows.values())
+                                                .flatMap(showData => 
+                                                    Array.from(showData.seasons.entries())
+                                                        .sort(([a], [b]) => a - b)
+                                                        .map(([seasonNumber, seasonData]) => {
+                                                            const sortDate = seasonData.is_watched ? 
+                                                                seasonData.first_watched : 
+                                                                seasonData.air_date;
+                                                            return {
+                                                                show: showData.show,
+                                                                seasonNumber,
+                                                                seasonData,
+                                                                sortDate
+                                                            };
+                                                        })
+                                                )
+                                                .sort((a, b) => a.sortDate - b.sortDate)
+                                                .map(({ show, seasonNumber, seasonData }) => {
+                                                    const seasonMetadata = show.metadata?.seasons?.find(s => Number(s.season_number) === Number(seasonNumber));
+                                                    const posterPath = seasonMetadata?.poster_path || show.metadata?.poster_path;
+                                                    
+                                                    return `
+                                                        <div class="poster-item ${!seasonData.is_watched ? 'not-started' : ''} ${seasonData.progress === 100 ? 'completed' : ''}" 
+                                                             title="${show.metadata?.name || show.title} - Saison ${seasonNumber}
+${seasonData.is_watched ? 
+`Épisodes vus: ${seasonData.episodes.length}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
+Premier épisode vu: ${seasonData.first_watched.toLocaleDateString()}
+Dernier épisode vu: ${seasonData.last_watched.toLocaleDateString()}` :
+`Sortie le: ${seasonData.air_date.toLocaleDateString()}
+${seasonData.total_episodes} épisodes`}">
+                                                            ${posterPath ? 
+                                                                `<img src="https://image.tmdb.org/t/p/w92${posterPath}" 
+                                                                      alt="${show.metadata?.name || show.title} - Saison ${seasonNumber}"
+                                                                      class="poster"
+                                                                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'poster-placeholder\'>${show.metadata?.name || show.title}<br>S${seasonNumber}</div>'">` :
+                                                                `<div class="poster-placeholder">${show.metadata?.name || show.title}<br>S${seasonNumber}</div>`
+                                                            }
+                                                            <div class="season-number">S${seasonNumber}</div>
+                                                            ${seasonData.is_watched ? 
+                                                                `<div class="progress-bar" style="width: ${seasonData.progress}%"></div>` : 
+                                                                `<div class="not-started-indicator">Non commencée</div>`}
+                                                        </div>
+                                                    `;
+                                                }).join('');
+                                        }
+                                    })()}
+                                </div>
+                            </div>
+                            ${yearData.people.length > 0 ? `
+                                <div class="section">
+                                    <h4 data-count="${yearData.people.length} personnes">Personnes</h4>
+                                    <div class="posters-grid">
+                                        ${yearData.people
+                                            .sort((a, b) => a.eventDate - b.eventDate)
+                                            .map(person => {
+                                                const eventText = person.eventType === 'birth' ? 'Naissance' : 'Décès';
+                                                const eventDate = person.eventDate.toLocaleDateString();
+                                                //${eventText}: ${eventDate}
+                                                return `
+                                                    <div class="person-item ${person.eventType}" 
+                                                         title="${person.who}
+${person.birthday ? `Né(e) le: ${new Date(person.birthday).toLocaleDateString()}` : ''}
+${person.deathDate ? `Décédé(e) le: ${new Date(person.deathDate).toLocaleDateString()}` : ''}">
+                                                        ${person.pic ? 
+                                                            `<img src="${person.pic}" 
+                                                                  alt="${person.who}"
+                                                                  class="person-photo"
+                                                                  onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'person-placeholder\'>${person.who}</div>'">` :
+                                                            `<div class="person-placeholder">${person.who}</div>`
+                                                        }
+                                                        <!--<div class="person-event-indicator">${eventText}</div>-->
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    timeline.appendChild(yearSection);
+                }
+
+                document.querySelector('.container').insertAdjacentHTML('beforeend', timeline.outerHTML);
+
+            } catch (error) {
+                console.error('Erreur globale:', error);
+                document.querySelector('.container').innerHTML += `
+                    <div class="section error">
+                        <h2>Erreur</h2>
+                        <p>Une erreur est survenue lors du chargement des données : ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Charger les données au chargement de la page
+        window.onload = loadData;
+
+        // Fonction pour forcer le rechargement des métadonnées
+        async function forceRefreshMetadata() {
+            try {
+                // Afficher un indicateur de chargement
+                const loadingElement = document.getElementById('loadingIndicator') || 
+                    document.createElement('div');
+                loadingElement.id = 'loadingIndicator';
+                loadingElement.className = 'loading-indicator';
+                loadingElement.innerHTML = `
+                    <div class="spinner"></div>
+                    <p>Rechargement des métadonnées...</p>
+                `;
+                if (!document.getElementById('loadingIndicator')) {
+                    document.body.appendChild(loadingElement);
+                }
+
+                // Vider le cache d'erreur pour permettre les nouveaux appels
+                Object.keys(sessionStorage).forEach(key => {
+                    if (key.startsWith(metadataCache.ERROR_PREFIX)) {
+                        sessionStorage.removeItem(key);
+                    }
+                });
+
+                // Recharger les métadonnées pour tous les éléments
+                let processedCount = 0;
+                let errorCount = 0;
+
+                // Recharger les métadonnées des films
+                for (const [key, movie] of contentDictionary.movieDetails) {
+                    try {
+                        if (movie.tmdb_id) {
+                            const metadata = await fetchMetadata('movie', movie.tmdb_id, true);
+                            if (metadata) {
+                                movie.metadata = metadata;
+                                movie.french_release_date = getFrenchReleaseDate(metadata);
+                                processedCount++;
+                            } else {
+                                errorCount++;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors du rechargement des métadonnées du film:', movie.title, error);
+                        errorCount++;
+                    }
+                }
+
+                // Recharger les métadonnées des séries
+                for (const [key, show] of contentDictionary.showDetails) {
+                    try {
+                        if (show.tmdb_id && show.tmdb_id.trim() !== '') {
+                            const metadata = await fetchMetadata('tv', show.tmdb_id, true);
+                            if (metadata) {
+                                show.metadata = metadata;
+                                processedCount++;
+                            } else {
+                                errorCount++;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors du rechargement des métadonnées de la série:', show.title, error);
+                        errorCount++;
+                    }
+                }
+
+                // Supprimer l'indicateur de chargement
+                loadingElement.remove();
+
+                // Recharger la page pour afficher les nouvelles métadonnées
+                location.reload();
+
+            } catch (error) {
+                console.error('Erreur lors du rechargement forcé des métadonnées:', error);
+                const loadingElement = document.getElementById('loadingIndicator');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+                alert('Erreur lors du rechargement des métadonnées: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html> 
