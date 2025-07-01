@@ -51,7 +51,7 @@
         .dashboard {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: auto 1fr;
+            grid-template-rows: auto auto 1fr;
             gap: 12px;
             padding: 12px;
             height: 100vh;
@@ -59,10 +59,12 @@
             z-index: 1;
             backdrop-filter: blur(3px);
             background-color: rgba(18, 18, 18, 0.2);
+            overflow-y: auto;
         }
 
         .header {
             grid-column: 1 / -1;
+            grid-row: 1;
             background: linear-gradient(135deg, rgba(33, 150, 243, 0.8), rgba(255, 64, 129, 0.8));
             padding: 1px 8px;
             border-radius: 6px;
@@ -71,6 +73,9 @@
             align-items: center;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             animation: headerGlow 3s infinite alternate;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .header-left {
@@ -139,6 +144,10 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             overflow: hidden;
             position: relative;
+            min-height: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .card:hover {
@@ -153,6 +162,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         .card-title i {
@@ -162,84 +172,638 @@
         .event-list {
             list-style: none;
             position: relative;
-            height: 200px;
-            overflow: hidden;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .events-table th {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 6px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-color);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .events-table td {
+            padding: 8px 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            vertical-align: top;
+        }
+
+        .events-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .day-header {
+            background: rgba(33, 150, 243, 0.1);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .day-header.today {
+            background: rgba(255, 64, 129, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .day-date {
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .day-name {
+            font-size: 0.75em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .events-column {
+            min-width: 200px;
         }
 
         .event-item {
-            padding: 8px;
-            margin-bottom: 6px;
-            border-radius: 6px;
-            background-color: rgba(255, 255, 255, 0.1);
+            padding: 4px 6px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
-            gap: 8px;
-            position: absolute;
-            width: 100%;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.5s ease-in-out;
-        }
-
-        .event-item.active {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .event-item.previous {
-            transform: translateX(-100%);
-            opacity: 0;
-        }
-
-        .event-date {
+            gap: 6px;
             font-size: 0.8em;
-            color: var(--text-secondary);
-            min-width: 80px;
         }
 
-        .event-title {
-            flex-grow: 1;
-            font-size: 0.9em;
+        .event-item:last-child {
+            margin-bottom: 0;
         }
 
         .event-type {
-            padding: 2px 6px;
+            padding: 2px 4px;
             border-radius: 3px;
             font-size: 0.7em;
             font-weight: bold;
+            white-space: nowrap;
         }
 
         .event-type.birthday {
             background-color: var(--secondary-color);
+            color: white;
         }
 
         .event-type.meeting {
             background-color: var(--primary-color);
+            color: white;
         }
 
         .event-type.reminder {
             background-color: var(--warning-color);
+            color: black;
         }
 
-        .event-dots {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
+        .event-title {
+            flex-grow: 1;
         }
 
-        .event-dot {
-            width: 8px;
-            height: 8px;
+        .birthday-event {
+            background: rgba(255, 64, 129, 0.1);
+            border-left: 3px solid var(--secondary-color);
+        }
+
+        .birthday-photo-small {
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            cursor: pointer;
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .no-events {
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.8em;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .birthday-card {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .birthday-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+
+        .birthday-countdown {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
+
+        .birthday-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8em;
             transition: all 0.3s ease;
         }
 
-        .event-dot.active {
+        .birthday-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(2px);
+        }
+
+        .birthday-photo {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .birthday-photo:hover {
+            transform: scale(1.1);
+            border-color: var(--secondary-color);
+            box-shadow: 0 3px 8px rgba(255, 64, 129, 0.3);
+        }
+
+        .birthday-photo.error {
+            display: none;
+        }
+
+        .birthday-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .birthday-name {
+            font-size: 0.85em;
+            font-weight: 500;
+            line-height: 1.1;
+        }
+
+        .birthday-date {
+            color: var(--text-secondary);
+            font-size: 0.7em;
+            font-weight: 400;
+        }
+
+        .birthday-days {
+            background-color: var(--secondary-color);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.65em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 4px;
+            padding: 4px 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+
+        .refresh-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-btn.loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        .todo-card {
+            grid-column: 3;
+            grid-row: 3;
+        }
+
+        .todo-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 6px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .todo-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 6px;
+        }
+
+        .todo-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .todo-section-title {
+            font-size: 0.85em;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .todo-section-count {
             background: var(--primary-color);
-            transform: scale(1.2);
+            color: white;
+            padding: 1px 4px;
+            border-radius: 8px;
+            font-size: 0.7em;
+        }
+
+        .todo-items {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .todo-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--primary-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .todo-checkbox.checked {
+            background: var(--primary-color);
+        }
+
+        .todo-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .todo-text.completed {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .todo-text {
+            font-size: 0.8em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .todo-due-date {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+
+        .todo-priority {
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 0.65em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .todo-priority.high {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .todo-priority.medium {
+            background: var(--warning-color);
+            color: black;
+        }
+
+        .todo-priority.low {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .okr-card {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .okr-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .okr-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .okr-section-title {
+            font-size: 0.9em;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .okr-item {
+            margin-bottom: 8px;
+        }
+
+        .okr-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .okr-title {
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .okr-progress {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 3px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+        }
+
+        .habits-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            margin-top: 6px;
+        }
+
+        .habit-day {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .habit-day.completed {
+            background: var(--success-color);
+        }
+
+        .habit-day.today {
+            border: 2px solid var(--primary-color);
+        }
+
+        .habit-day:hover {
+            transform: scale(1.1);
+        }
+
+        .streak-counter {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .streak-counter i {
+            color: var(--warning-color);
+        }
+
+        .today-highlight {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            background: linear-gradient(135deg, rgba(255, 64, 129, 0.9), rgba(255, 193, 7, 0.9));
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(255, 64, 129, 0.4);
+            animation: todayPulse 2s infinite alternate;
+            position: relative;
+            overflow: hidden;
+            min-height: 50vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .today-highlight::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes todayPulse {
+            0% { transform: scale(1); box-shadow: 0 4px 20px rgba(255, 64, 129, 0.4); }
+            100% { transform: scale(1.02); box-shadow: 0 6px 30px rgba(255, 64, 129, 0.6); }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .today-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .today-content {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            flex: 1;
+            align-items: stretch;
+        }
+
+        .today-section {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 12px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            min-height: 80px;
+        }
+
+        .today-section-title {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .today-events {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            justify-content: flex-start;
+        }
+
+        .today-event {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .today-event:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(4px);
+        }
+
+        .today-event-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            flex-shrink: 0;
+        }
+
+        .today-event-icon.birthday {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .today-event-icon.meeting {
+            background: rgba(33, 150, 243, 0.8);
+        }
+
+        .today-event-icon.reminder {
+            background: rgba(255, 193, 7, 0.8);
+        }
+
+        .today-event-icon.todo {
+            background: rgba(76, 175, 80, 0.8);
+        }
+
+        .today-event-text {
+            flex-grow: 1;
+        }
+
+        .today-event-time {
+            font-size: 0.75em;
+            opacity: 0.8;
+        }
+
+        .today-empty {
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .today-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+
+        .streak-counter i {
+            color: var(--warning-color);
         }
 
         .weather-card {
@@ -390,84 +954,9 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
-        @media (max-width: 1400px) {
-            .hourly-container {
-                grid-template-columns: repeat(8, 1fr);
-            }
-        }
-
-        @media (max-width: 1000px) {
-            .hourly-container {
-                grid-template-columns: repeat(6, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .hourly-container {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        .birthday-card {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-        }
-
-        .birthday-header {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .birthday-countdown {
-            font-size: 1em;
-            color: var(--secondary-color);
-            font-weight: bold;
-        }
-
-        .birthday-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 4px 6px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.8em;
-        }
-
-        .birthday-photo {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            object-fit: cover;
-            flex-shrink: 0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .birthday-photo.error {
-            display: none;
-        }
-
-        .birthday-date {
-            color: var(--text-secondary);
-            font-size: 0.75em;
-            min-width: 50px;
-        }
-
-        .birthday-name {
-            flex-grow: 1;
-            font-size: 0.8em;
-        }
-
-        .birthday-days {
-            background-color: var(--secondary-color);
-            padding: 1px 4px;
-            border-radius: 3px;
-            font-size: 0.7em;
-            font-weight: bold;
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         @keyframes weatherFloat {
@@ -512,242 +1001,24 @@
         .content {
             position: relative;
             z-index: 1;
-            /* ajoute padding/marges pour séparer du bord si besoin */
         }
 
-        .todo-card {
-            grid-column: 3;
-            grid-row: 2;
-            max-height: calc(100vh - 120px);
-            overflow-y: auto;
+        @media (max-width: 1400px) {
+            .hourly-container {
+                grid-template-columns: repeat(8, 1fr);
+            }
         }
 
-        .todo-container {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding-right: 6px;
+        @media (max-width: 1000px) {
+            .hourly-container {
+                grid-template-columns: repeat(6, 1fr);
+            }
         }
 
-        .todo-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-            padding: 6px;
-        }
-
-        .todo-section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .todo-section-title {
-            font-size: 0.85em;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .todo-section-count {
-            background: var(--primary-color);
-            color: white;
-            padding: 1px 4px;
-            border-radius: 8px;
-            font-size: 0.7em;
-        }
-
-        .todo-items {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .todo-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 3px;
-            transition: all 0.3s ease;
-            font-size: 0.8em;
-        }
-
-        .todo-checkbox {
-            width: 14px;
-            height: 14px;
-            border: 2px solid var(--primary-color);
-            border-radius: 2px;
-            cursor: pointer;
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        .todo-checkbox.checked {
-            background: var(--primary-color);
-        }
-
-        .todo-checkbox.checked::after {
-            content: '✓';
-            position: absolute;
-            color: white;
-            font-size: 12px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .todo-text.completed {
-            text-decoration: line-through;
-            color: var(--text-secondary);
-        }
-
-        .todo-text {
-            font-size: 0.8em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .todo-due-date {
-            font-size: 0.7em;
-            color: var(--text-secondary);
-            margin-top: 1px;
-        }
-
-        .todo-priority {
-            padding: 1px 4px;
-            border-radius: 2px;
-            font-size: 0.65em;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        .todo-priority.high {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .todo-priority.medium {
-            background: var(--warning-color);
-            color: black;
-        }
-
-        .todo-priority.low {
-            background: var(--success-color);
-            color: white;
-        }
-
-        .okr-card {
-            grid-column: 2;
-            grid-row: 2;
-            max-height: calc(100vh - 120px);
-            overflow-y: auto;
-        }
-
-        .okr-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .okr-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            padding: 8px;
-        }
-
-        .okr-section-title {
-            font-size: 0.9em;
-            color: var(--primary-color);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .okr-item {
-            margin-bottom: 8px;
-        }
-
-        .okr-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-
-        .okr-title {
-            font-size: 0.8em;
-            font-weight: 500;
-        }
-
-        .okr-progress {
-            font-size: 0.7em;
-            color: var(--text-secondary);
-        }
-
-        .progress-bar-container {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 3px;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            transition: width 0.3s ease;
-        }
-
-        .habits-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 3px;
-            margin-top: 6px;
-        }
-
-        .habit-day {
-            aspect-ratio: 1;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7em;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .habit-day.completed {
-            background: var(--success-color);
-        }
-
-        .habit-day.today {
-            border: 2px solid var(--primary-color);
-        }
-
-        .habit-day:hover {
-            transform: scale(1.1);
-        }
-
-        .streak-counter {
-            font-size: 0.7em;
-            color: var(--text-secondary);
-            margin-top: 3px;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .streak-counter i {
-            color: var(--warning-color);
+        @media (max-width: 768px) {
+            .hourly-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -777,6 +1048,46 @@
             </div>
         </header>
 
+        <div class="today-highlight">
+            <h2 class="today-title">
+                <i class="fas fa-star"></i>
+                AUJOURD'HUI
+                <span class="today-count" id="todayCount">0</span>
+            </h2>
+            <div class="today-content">
+                <div class="today-section">
+                    <div class="today-section-title">
+                        <i class="fas fa-calendar-day"></i>
+                        Événements
+                        <span class="today-count" id="todayEventsCount">0</span>
+                    </div>
+                    <div class="today-events" id="todayEvents">
+                        <!-- Les événements du jour seront ajoutés dynamiquement -->
+                    </div>
+                </div>
+                <div class="today-section">
+                    <div class="today-section-title">
+                        <i class="fas fa-tasks"></i>
+                        Tâches prioritaires
+                        <span class="today-count" id="todayTodosCount">0</span>
+                    </div>
+                    <div class="today-events" id="todayTodos">
+                        <!-- Les tâches du jour seront ajoutées dynamiquement -->
+                    </div>
+                </div>
+                <div class="today-section">
+                    <div class="today-section-title">
+                        <i class="fas fa-birthday-cake"></i>
+                        Anniversaires
+                        <span class="today-count" id="todayBirthdaysCount">0</span>
+                    </div>
+                    <div class="today-events" id="todayBirthdays">
+                        <!-- Les anniversaires du jour seront ajoutés dynamiquement -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <h2 class="card-title"><i class="fas fa-calendar"></i> Prochains Événements</h2>
             <ul class="event-list" id="eventList">
@@ -788,7 +1099,10 @@
             <div class="birthday-card">
                 <div class="birthday-header">
                     <h2 class="card-title"><i class="fas fa-birthday-cake"></i> Anniversaires</h2>
-                    <div class="birthday-countdown" id="nextBirthday">Dans 5 jours</div>
+                    <div class="birthday-countdown" id="nextBirthday"></div>
+                    <button onclick="refreshBirthdayData()" class="refresh-btn" title="Rafraîchir les données">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                 </div>
                 <div id="birthdayList">
                     <!-- Les anniversaires seront ajoutés dynamiquement -->
@@ -834,6 +1148,16 @@
         // Données d'exemple pour les événements
         const events = [
             {
+                date: new Date().toISOString().split('T')[0], // Aujourd'hui
+                title: 'Réunion d\'équipe importante',
+                type: 'meeting'
+            },
+            {
+                date: new Date().toISOString().split('T')[0], // Aujourd'hui
+                title: 'Rappel: Payer les factures',
+                type: 'reminder'
+            },
+            {
                 date: '2025-06-20',
                 title: 'Réunion d\'équipe',
                 type: 'meeting'
@@ -849,6 +1173,80 @@
                 type: 'reminder'
             }
         ];
+
+        // Données d'exemple pour les tâches
+        const todos = {
+            "Travail": [
+                {
+                    text: "Finaliser le rapport mensuel",
+                    completed: false,
+                    dueDate: new Date().toISOString().split('T')[0], // Aujourd'hui
+                    priority: "high"
+                },
+                {
+                    text: "Préparer la présentation client",
+                    completed: false,
+                    dueDate: new Date().toISOString().split('T')[0], // Aujourd'hui
+                    priority: "medium"
+                },
+                {
+                    text: "Répondre aux emails en attente",
+                    completed: false,
+                    dueDate: "2024-03-19",
+                    priority: "high"
+                },
+                {
+                    text: "Mettre à jour la documentation",
+                    completed: true,
+                    dueDate: "2024-03-15",
+                    priority: "low"
+                }
+            ],
+            "Personnel": [
+                {
+                    text: "Faire les courses",
+                    completed: false,
+                    dueDate: new Date().toISOString().split('T')[0], // Aujourd'hui
+                    priority: "medium"
+                },
+                {
+                    text: "Rendre les livres à la bibliothèque",
+                    completed: true,
+                    dueDate: "2024-03-15",
+                    priority: "low"
+                },
+                {
+                    text: "Prendre RDV chez le dentiste",
+                    completed: false,
+                    dueDate: "2024-03-25",
+                    priority: "medium"
+                }
+            ],
+            "Projets": [
+                {
+                    text: "Mettre à jour le portfolio",
+                    completed: false,
+                    dueDate: "2024-03-25",
+                    priority: "high"
+                },
+                {
+                    text: "Finaliser le design du site",
+                    completed: false,
+                    dueDate: "2024-03-28",
+                    priority: "high"
+                },
+                {
+                    text: "Réviser le code",
+                    completed: false,
+                    dueDate: "2024-03-21",
+                    priority: "medium"
+                }
+            ]
+        };
+
+        // Configuration du cache pour les anniversaires
+        const BIRTHDAY_CACHE_KEY = 'birthday_data_cache';
+        const BIRTHDAY_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 heures en millisecondes
 
         // Fonction pour formater la date
         function formatDate(dateString) {
@@ -868,140 +1266,557 @@
             return diffDays;
         }
 
-        // Mise à jour de la liste des événements
+        // Fonction pour formater la date des tâches
+        function formatTodoDate(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return "Aujourd'hui";
+            } else if (date.toDateString() === tomorrow.toDateString()) {
+                return "Demain";
+            } else {
+                return date.toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long'
+                });
+            }
+        }
+
+        // Fonction pour mettre à jour la liste des tâches
+        function updateTodoList() {
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = '';
+
+            for (const [section, items] of Object.entries(todos)) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'todo-section';
+                
+                const sectionHeader = document.createElement('div');
+                sectionHeader.className = 'todo-section-header';
+                
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'todo-section-title';
+                sectionTitle.innerHTML = `
+                    <i class="fas fa-folder"></i>
+                    ${section}
+                    <span class="todo-section-count">${items.length}</span>
+                `;
+                
+                sectionHeader.appendChild(sectionTitle);
+                sectionDiv.appendChild(sectionHeader);
+
+                const todoItems = document.createElement('div');
+                todoItems.className = 'todo-items';
+
+                items.forEach(item => {
+                    const todoItem = document.createElement('div');
+                    todoItem.className = 'todo-item';
+                    todoItem.innerHTML = `
+                        <div class="todo-checkbox ${item.completed ? 'checked' : ''}" onclick="toggleTodo('${section}', '${item.text}')"></div>
+                        <div class="todo-content">
+                            <div class="todo-text ${item.completed ? 'completed' : ''}">${item.text}</div>
+                            <div class="todo-due-date">${formatTodoDate(item.dueDate)}</div>
+                        </div>
+                        <div class="todo-priority ${item.priority}">${item.priority}</div>
+                    `;
+                    todoItems.appendChild(todoItem);
+                });
+
+                sectionDiv.appendChild(todoItems);
+                todoList.appendChild(sectionDiv);
+            }
+            
+            // Mettre à jour la section "Aujourd'hui" après la mise à jour des tâches
+            updateTodayHighlight();
+        }
+
+        // Fonction pour basculer l'état d'une tâche
+        function toggleTodo(section, text) {
+            const item = todos[section].find(todo => todo.text === text);
+            if (item) {
+                item.completed = !item.completed;
+                updateTodoList();
+            }
+        }
+
+        // Mise à jour initiale de la liste des tâches
+        updateTodoList();
+
+        // Données d'exemple pour les OKR et habitudes
+        const okrData = {
+            "Objectifs Professionnels": [
+                {
+                    title: "Améliorer la performance du site",
+                    progress: 75,
+                    keyResults: [
+                        { text: "Temps de chargement < 2s", progress: 80 },
+                        { text: "Score Lighthouse > 90", progress: 65 },
+                        { text: "Réduire les erreurs 404", progress: 90 }
+                    ]
+                },
+                {
+                    title: "Formation continue",
+                    progress: 60,
+                    keyResults: [
+                        { text: "Compléter 3 cours en ligne", progress: 66 },
+                        { text: "Obtenir 2 certifications", progress: 50 }
+                    ]
+                }
+            ],
+            "Habitudes": [
+                {
+                    title: "Lecture quotidienne",
+                    streak: 5,
+                    days: [true, true, true, true, true, false, false],
+                    goal: "30 minutes"
+                },
+                {
+                    title: "Exercice physique",
+                    streak: 3,
+                    days: [true, true, true, false, false, false, false],
+                    goal: "20 minutes"
+                },
+                {
+                    title: "Méditation",
+                    streak: 7,
+                    days: [true, true, true, true, true, true, true],
+                    goal: "10 minutes"
+                }
+            ]
+        };
+
+        // Fonction pour mettre à jour les OKR et habitudes
+        function updateOKRList() {
+            const okrList = document.getElementById('okrList');
+            okrList.innerHTML = '';
+
+            // Affichage des OKR
+            const okrSection = document.createElement('div');
+            okrSection.className = 'okr-section';
+            okrSection.innerHTML = `
+                <div class="okr-section-title">
+                    <i class="fas fa-bullseye"></i>
+                    Objectifs Professionnels
+                </div>
+            `;
+
+            okrData["Objectifs Professionnels"].forEach(okr => {
+                const okrItem = document.createElement('div');
+                okrItem.className = 'okr-item';
+                okrItem.innerHTML = `
+                    <div class="okr-header">
+                        <div class="okr-title">${okr.title}</div>
+                        <div class="okr-progress">${okr.progress}%</div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${okr.progress}%"></div>
+                    </div>
+                    ${okr.keyResults.map(kr => `
+                        <div class="okr-item" style="margin-top: 8px; margin-left: 12px;">
+                            <div class="okr-header">
+                                <div class="okr-title" style="font-size: 0.85em;">${kr.text}</div>
+                                <div class="okr-progress">${kr.progress}%</div>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: ${kr.progress}%"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+                okrSection.appendChild(okrItem);
+            });
+
+            okrList.appendChild(okrSection);
+
+            // Affichage des habitudes
+            const habitsSection = document.createElement('div');
+            habitsSection.className = 'okr-section';
+            habitsSection.innerHTML = `
+                <div class="okr-section-title">
+                    <i class="fas fa-calendar-check"></i>
+                    Habitudes
+                </div>
+            `;
+
+            okrData["Habitudes"].forEach(habit => {
+                const habitItem = document.createElement('div');
+                habitItem.className = 'okr-item';
+                
+                const today = new Date().getDay();
+                const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+                
+                habitItem.innerHTML = `
+                    <div class="okr-header">
+                        <div class="okr-title">${habit.title}</div>
+                        <div class="okr-progress">${habit.goal}</div>
+                    </div>
+                    <div class="habits-grid">
+                        ${days.map((day, index) => `
+                            <div class="habit-day ${habit.days[index] ? 'completed' : ''} ${index === today ? 'today' : ''}">
+                                ${day}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="streak-counter">
+                        <i class="fas fa-fire"></i>
+                        ${habit.streak} jours consécutifs
+                    </div>
+                `;
+                habitsSection.appendChild(habitItem);
+            });
+
+            okrList.appendChild(habitsSection);
+        }
+
+        // Mise à jour initiale
+        updateOKRList();
+
+        // Fonction pour mettre à jour la liste des événements
         function updateEventList() {
             const eventList = document.getElementById('eventList');
             eventList.innerHTML = '';
 
-            // Filtrer les événements à venir
-            const upcomingEvents = events.filter(event => {
-                const daysRemaining = getDaysRemaining(event.date);
-                return daysRemaining >= 0;
-            });
-
-            // Créer les éléments d'événements
-            upcomingEvents.forEach((event, index) => {
-                const li = document.createElement('li');
-                li.className = 'event-item';
-                li.innerHTML = `
-                    <div class="event-date">${formatDate(event.date)}</div>
-                    <div class="event-title">${event.title}</div>
-                    <div class="event-type ${event.type}">${getDaysRemaining(event.date)} jours</div>
-                `;
-                eventList.appendChild(li);
-            });
-
-            // Créer les points de navigation
-            const dotsContainer = document.createElement('div');
-            dotsContainer.className = 'event-dots';
-            upcomingEvents.forEach((_, index) => {
-                const dot = document.createElement('div');
-                dot.className = 'event-dot';
-                dot.addEventListener('click', () => showEvent(index));
-                dotsContainer.appendChild(dot);
-            });
-            eventList.appendChild(dotsContainer);
-
-            // Initialiser le slideshow
-            currentEventIndex = 0;
-            showEvent(0);
-        }
-
-        let currentEventIndex = 0;
-        let slideshowInterval;
-
-        function showEvent(index) {
-            const items = document.querySelectorAll('.event-item');
-            const dots = document.querySelectorAll('.event-dot');
+            // Créer le tableau
+            const table = document.createElement('table');
+            table.className = 'events-table';
             
-            // Retirer les classes actives
-            items.forEach(item => {
-                item.classList.remove('active', 'previous');
+            // En-tête du tableau
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Date</th>
+                    <th class="events-column">Événements</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            // Corps du tableau
+            const tbody = document.createElement('tbody');
+            
+            // Générer les 14 prochains jours
+            const today = new Date();
+            for (let i = 0; i < 14; i++) {
+                const currentDate = new Date(today);
+                currentDate.setDate(today.getDate() + i);
+                
+                const dateString = currentDate.toISOString().split('T')[0];
+                const isToday = i === 0;
+                
+                // Trouver les événements pour cette date
+                const dayEvents = events.filter(event => event.date === dateString);
+                
+                // Trouver les anniversaires pour cette date
+                const dayBirthdays = getBirthdaysForDate(currentDate);
+                
+                // Combiner tous les événements
+                const allEvents = [...dayEvents, ...dayBirthdays];
+                
+                const row = document.createElement('tr');
+                row.className = isToday ? 'day-header today' : 'day-header';
+                
+                // Cellule de date
+                const dateCell = document.createElement('td');
+                dateCell.innerHTML = `
+                    <div class="day-date">${currentDate.getDate()}</div>
+                    <div class="day-name">${currentDate.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
+                `;
+                
+                // Cellule des événements
+                const eventsCell = document.createElement('td');
+                if (allEvents.length > 0) {
+                    allEvents.forEach(event => {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.className = `event-item ${event.type === 'birthday' ? 'birthday-event' : ''}`;
+                        
+                        if (event.type === 'birthday') {
+                            const photoHtml = event.pic ? 
+                                `<img src="${event.pic}" alt="${event.title}" class="birthday-photo-small" onerror="this.style.display='none'">` : 
+                                `<div style="width: 20px; height: 20px; border-radius: 50%; background: var(--secondary-color); display: flex; align-items: center; justify-content: center; font-size: 0.6em;"><i class="fas fa-user"></i></div>`;
+                            
+                            eventDiv.innerHTML = `
+                                ${photoHtml}
+                                <div class="event-type birthday">Anniv</div>
+                                <div class="event-title">${event.title} (${event.age} ans)</div>
+                            `;
+                        } else {
+                            eventDiv.innerHTML = `
+                                <div class="event-type ${event.type}">${getEventTypeLabel(event.type)}</div>
+                                <div class="event-title">${event.title}</div>
+                            `;
+                        }
+                        
+                        eventsCell.appendChild(eventDiv);
+                    });
+                } else {
+                    eventsCell.innerHTML = '<div class="no-events">Aucun événement</div>';
+                }
+                
+                row.appendChild(dateCell);
+                row.appendChild(eventsCell);
+                tbody.appendChild(row);
+            }
+            
+            table.appendChild(tbody);
+            eventList.appendChild(table);
+        }
+
+        // Fonction pour mettre à jour la section "Aujourd'hui"
+        function updateTodayHighlight() {
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            
+            // Récupérer les événements d'aujourd'hui
+            const todayEvents = events.filter(event => event.date === todayString);
+            const todayBirthdays = getBirthdaysForDate(today);
+            const allTodayEvents = [...todayEvents, ...todayBirthdays];
+            
+            // Récupérer les tâches prioritaires d'aujourd'hui
+            const todayTodos = getTodayTodos();
+            
+            // Mettre à jour les compteurs
+            document.getElementById('todayCount').textContent = allTodayEvents.length + todayTodos.length;
+            document.getElementById('todayEventsCount').textContent = allTodayEvents.length;
+            document.getElementById('todayTodosCount').textContent = todayTodos.length;
+            document.getElementById('todayBirthdaysCount').textContent = todayBirthdays.length;
+            
+            // Mettre à jour la section événements
+            updateTodayEvents(allTodayEvents);
+            
+            // Mettre à jour la section tâches
+            updateTodayTodos(todayTodos);
+            
+            // Mettre à jour la section anniversaires
+            updateTodayBirthdays(todayBirthdays);
+        }
+
+        // Fonction pour récupérer les tâches d'aujourd'hui
+        function getTodayTodos() {
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            const todayTodos = [];
+            
+            for (const [section, items] of Object.entries(todos)) {
+                items.forEach(item => {
+                    if (item.dueDate === todayString && !item.completed) {
+                        todayTodos.push({
+                            ...item,
+                            section: section
+                        });
+                    }
+                });
+            }
+            
+            // Trier par priorité (high, medium, low)
+            const priorityOrder = { high: 3, medium: 2, low: 1 };
+            return todayTodos.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
+        }
+
+        // Fonction pour mettre à jour les événements d'aujourd'hui
+        function updateTodayEvents(events) {
+            const container = document.getElementById('todayEvents');
+            container.innerHTML = '';
+            
+            if (events.length === 0) {
+                container.innerHTML = '<div class="today-empty">Aucun événement aujourd\'hui</div>';
+                return;
+            }
+            
+            events.forEach(event => {
+                const eventDiv = document.createElement('div');
+                eventDiv.className = 'today-event';
+                
+                let iconClass = '';
+                let iconSymbol = '';
+                
+                if (event.type === 'birthday') {
+                    iconClass = 'birthday';
+                    iconSymbol = '<i class="fas fa-birthday-cake"></i>';
+                } else if (event.type === 'meeting') {
+                    iconClass = 'meeting';
+                    iconSymbol = '<i class="fas fa-users"></i>';
+                } else if (event.type === 'reminder') {
+                    iconClass = 'reminder';
+                    iconSymbol = '<i class="fas fa-bell"></i>';
+                }
+                
+                eventDiv.innerHTML = `
+                    <div class="today-event-icon ${iconClass}">${iconSymbol}</div>
+                    <div class="today-event-text">${event.title}</div>
+                    <div class="today-event-time">${event.type === 'birthday' ? `${event.age} ans` : 'Aujourd\'hui'}</div>
+                `;
+                
+                container.appendChild(eventDiv);
             });
-            dots.forEach(dot => dot.classList.remove('active'));
-
-            // Ajouter les classes pour l'animation
-            items[index].classList.add('active');
-            dots[index].classList.add('active');
-
-            // Marquer l'élément précédent
-            const previousIndex = (index - 1 + items.length) % items.length;
-            items[previousIndex].classList.add('previous');
-
-            currentEventIndex = index;
         }
 
-        function startSlideshow() {
-            const items = document.querySelectorAll('.event-item');
-            if (items.length > 1) {
-                slideshowInterval = setInterval(() => {
-                    const nextIndex = (currentEventIndex + 1) % items.length;
-                    showEvent(nextIndex);
-                }, 5000); // Changer d'événement toutes les 5 secondes
+        // Fonction pour mettre à jour les tâches d'aujourd'hui
+        function updateTodayTodos(todos) {
+            const container = document.getElementById('todayTodos');
+            container.innerHTML = '';
+            
+            if (todos.length === 0) {
+                container.innerHTML = '<div class="today-empty">Aucune tâche prioritaire</div>';
+                return;
             }
+            
+            todos.forEach(todo => {
+                const todoDiv = document.createElement('div');
+                todoDiv.className = 'today-event';
+                
+                const priorityColors = {
+                    high: 'rgba(244, 67, 54, 0.8)',
+                    medium: 'rgba(255, 193, 7, 0.8)',
+                    low: 'rgba(76, 175, 80, 0.8)'
+                };
+                
+                todoDiv.innerHTML = `
+                    <div class="today-event-icon todo" style="background: ${priorityColors[todo.priority]}">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="today-event-text">${todo.text}</div>
+                    <div class="today-event-time">${todo.section}</div>
+                `;
+                
+                container.appendChild(todoDiv);
+            });
         }
 
-        function stopSlideshow() {
-            if (slideshowInterval) {
-                clearInterval(slideshowInterval);
+        // Fonction pour mettre à jour les anniversaires d'aujourd'hui
+        function updateTodayBirthdays(birthdays) {
+            const container = document.getElementById('todayBirthdays');
+            container.innerHTML = '';
+            
+            if (birthdays.length === 0) {
+                container.innerHTML = '<div class="today-empty">Aucun anniversaire</div>';
+                return;
             }
+            
+            birthdays.forEach(birthday => {
+                const birthdayDiv = document.createElement('div');
+                birthdayDiv.className = 'today-event';
+                
+                const photoHtml = birthday.pic ? 
+                    `<img src="${birthday.pic}" alt="${birthday.title}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255, 255, 255, 0.3);" onerror="this.style.display='none'">` : 
+                    `<div class="today-event-icon birthday"><i class="fas fa-user"></i></div>`;
+                
+                birthdayDiv.innerHTML = `
+                    ${photoHtml}
+                    <div class="today-event-text">${birthday.title}</div>
+                    <div class="today-event-time">${birthday.age} ans</div>
+                `;
+                
+                container.appendChild(birthdayDiv);
+            });
         }
 
-        // Mise à jour initiale
-        updateEventList();
-        startSlideshow();
+        // Fonction pour obtenir les anniversaires pour une date donnée
+        function getBirthdaysForDate(date) {
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            
+            // Récupérer les données des anniversaires depuis le cache ou l'API
+            const peopleData = getCachedBirthdayData(true) || [];
+            
+            return peopleData
+                .filter(person => person.birthday && !person.deathDate)
+                .map(person => {
+                    const birthDate = new Date(person.birthday);
+                    if (birthDate.getMonth() + 1 === month && birthDate.getDate() === day) {
+                        return {
+                            date: `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                            title: person.who,
+                            type: 'birthday',
+                            pic: person.pic,
+                            age: calculateAge(person.birthday)
+                        };
+                    }
+                    return null;
+                })
+                .filter(event => event !== null);
+        }
 
-        // Arrêter le slideshow quand la fenêtre n'est pas visible
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopSlideshow();
-            } else {
-                startSlideshow();
-            }
-        });
+        // Fonction pour obtenir le label d'un type d'événement
+        function getEventTypeLabel(type) {
+            const labels = {
+                'meeting': 'Réunion',
+                'reminder': 'Rappel',
+                'birthday': 'Anniv'
+            };
+            return labels[type] || type;
+        }
 
-        // Données d'exemple pour les anniversaires
-        const birthdays = [
-            {
-                name: 'Marie',
-                date: '2025-06-17'
-            },
-            {
-                name: 'Jean',
-                date: '2024-04-15'
-            },
-            {
-                name: 'Sophie',
-                date: '2024-05-03'
-            }
-        ];
-
-        // Fonction pour récupérer les données des personnes depuis l'API
+        // Fonction pour récupérer les données des personnes depuis l'API avec cache
         async function fetchPeopleData() {
             try {
-                console.log('Récupération des données des personnes...');
+                // Vérifier le cache d'abord
+                const cachedData = getCachedBirthdayData();
+                if (cachedData) {
+                    console.log('Données des anniversaires récupérées depuis le cache');
+                    return cachedData;
+                }
+
+                console.log('Récupération des données des personnes depuis l\'API...');
                 const response = await fetch(wsConfig.buildUrl('api/calBirthday/partial'));
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
                 console.log('Données des personnes reçues:', data.length, 'personnes');
+                
+                // Mettre en cache les nouvelles données
+                setCachedBirthdayData(data);
+                
                 return data;
             } catch (error) {
                 console.error('Erreur lors de la récupération des données des personnes:', error);
+                
+                // En cas d'erreur, essayer de récupérer les données en cache même expirées
+                const cachedData = getCachedBirthdayData(true);
+                if (cachedData) {
+                    console.log('Utilisation des données en cache (expirées) en raison de l\'erreur API');
+                    return cachedData;
+                }
+                
                 return [];
             }
         }
 
-        // Fonction pour extraire la date d'anniversaire d'une personne
-        function getBirthdayDate(person) {
-            if (person.birthday) {
-                const birthDate = new Date(person.birthday);
-                // Retourner la date au format MM-DD pour l'année en cours
-                const currentYear = new Date().getFullYear();
-                return `${currentYear}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`;
+        // Fonction pour récupérer les données en cache
+        function getCachedBirthdayData(allowExpired = false) {
+            try {
+                const cached = localStorage.getItem(BIRTHDAY_CACHE_KEY);
+                if (!cached) return null;
+
+                const { data, timestamp } = JSON.parse(cached);
+                const now = Date.now();
+                
+                if (!allowExpired && (now - timestamp > BIRTHDAY_CACHE_DURATION)) {
+                    console.log('Cache des anniversaires expiré');
+                    return null;
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Erreur lors de la lecture du cache des anniversaires:', error);
+                return null;
             }
-            return null;
+        }
+
+        // Fonction pour mettre en cache les données
+        function setCachedBirthdayData(data) {
+            try {
+                const cacheData = {
+                    data: data,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify(cacheData));
+                console.log('Données des anniversaires mises en cache');
+            } catch (error) {
+                console.error('Erreur lors de la mise en cache des anniversaires:', error);
+            }
         }
 
         // Fonction pour calculer l'âge
@@ -1021,9 +1836,7 @@
         // Mise à jour de la liste des anniversaires
         async function updateBirthdayList() {
             const birthdayList = document.getElementById('birthdayList');
-            const nextBirthday = document.getElementById('nextBirthday');
-            birthdayList.innerHTML = '';
-
+            
             try {
                 // Récupérer les données depuis l'API
                 const peopleData = await fetchPeopleData();
@@ -1035,35 +1848,21 @@
 
                 // Créer la liste des anniversaires pour l'année en cours
                 const birthdays = livingPeople.map(person => {
-                    const birthdayDate = getBirthdayDate(person);
-                    if (birthdayDate) {
-                        return {
-                            name: person.who,
-                            date: birthdayDate,
-                            originalBirthDate: person.birthday,
-                            pic: person.pic,
-                            age: calculateAge(person.birthday)
-                        };
-                    }
-                    return null;
+                    const birthDate = new Date(person.birthday);
+                    const currentYear = new Date().getFullYear();
+                    const birthdayDate = `${currentYear}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`;
+                    
+                    return {
+                        name: person.who,
+                        date: birthdayDate,
+                        originalBirthDate: person.birthday,
+                        pic: person.pic,
+                        age: calculateAge(person.birthday)
+                    };
                 }).filter(birthday => birthday !== null);
 
                 // Trier les anniversaires par date
                 birthdays.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                // Trouver le prochain anniversaire
-                const today = new Date();
-                const nextBirthdayEvent = birthdays.find(birthday => {
-                    const birthdayDate = new Date(birthday.date);
-                    return birthdayDate >= today;
-                });
-
-                if (nextBirthdayEvent) {
-                    const daysRemaining = getDaysRemaining(nextBirthdayEvent.date);
-                    nextBirthday.textContent = `Dans ${daysRemaining} jours`;
-                } else {
-                    nextBirthday.textContent = 'Aucun anniversaire à venir';
-                }
 
                 // Afficher les anniversaires à venir (limiter à 4 pour l'affichage)
                 const upcomingBirthdays = birthdays.filter(birthday => {
@@ -1071,6 +1870,7 @@
                     return daysRemaining >= 0;
                 }).slice(0, 4);
 
+                birthdayList.innerHTML = '';
                 upcomingBirthdays.forEach(birthday => {
                     const daysRemaining = getDaysRemaining(birthday.date);
                     const div = document.createElement('div');
@@ -1079,12 +1879,14 @@
                     // Créer l'élément avec photo si disponible
                     const photoHtml = birthday.pic ? 
                         `<img src="${birthday.pic}" alt="${birthday.name}" class="birthday-photo" onerror="this.classList.add('error')">` : 
-                        '';
+                        `<div class="birthday-photo" style="background: var(--secondary-color); display: flex; align-items: center; justify-content: center; font-size: 0.8em;"><i class="fas fa-user"></i></div>`;
                     
                     div.innerHTML = `
                         ${photoHtml}
-                        <div class="birthday-date">${formatDate(birthday.date)}</div>
-                        <div class="birthday-name">${birthday.name} (${birthday.age} ans)</div>
+                        <div class="birthday-info">
+                            <div class="birthday-name">${birthday.name}</div>
+                            <div class="birthday-date">${formatDate(birthday.date)} (${birthday.age} ans)</div>
+                        </div>
                         <div class="birthday-days">${daysRemaining}j</div>
                     `;
                     birthdayList.appendChild(div);
@@ -1095,8 +1897,11 @@
                     const noBirthdayDiv = document.createElement('div');
                     noBirthdayDiv.className = 'birthday-item';
                     noBirthdayDiv.innerHTML = `
-                        <div class="birthday-name" style="text-align: center; width: 100%; color: var(--text-secondary);">
-                            Aucun anniversaire à venir
+                        <div class="birthday-photo" style="background: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: 0.8em;"><i class="fas fa-calendar-times"></i></div>
+                        <div class="birthday-info">
+                            <div class="birthday-name" style="color: var(--text-secondary);">
+                                Aucun anniversaire à venir
+                            </div>
                         </div>
                     `;
                     birthdayList.appendChild(noBirthdayDiv);
@@ -1107,8 +1912,11 @@
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'birthday-item';
                 errorDiv.innerHTML = `
-                    <div class="birthday-name" style="text-align: center; width: 100%; color: var(--danger-color);">
-                        Erreur de chargement
+                    <div class="birthday-photo" style="background: var(--danger-color); display: flex; align-items: center; justify-content: center; font-size: 0.8em;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="birthday-info">
+                        <div class="birthday-name" style="color: var(--danger-color);">
+                            Erreur de chargement
+                        </div>
                     </div>
                 `;
                 birthdayList.appendChild(errorDiv);
@@ -1116,17 +1924,20 @@
         }
 
         // Mise à jour initiale
+        updateEventList();
+        updateTodayHighlight();
         updateBirthdayList().catch(error => {
             console.error('Erreur lors de la mise à jour initiale des anniversaires:', error);
         });
 
-        // Mise à jour toutes les minutes
+        // Mise à jour toutes les 10 minutes
         setInterval(() => {
             updateEventList();
+            updateTodayHighlight();
             updateBirthdayList().catch(error => {
                 console.error('Erreur lors de la mise à jour périodique des anniversaires:', error);
             });
-        }, 60000);
+        }, 10*60*1000);
 
         // Animation de notification
         function showNotification(message) {
@@ -1330,281 +2141,6 @@
 
         // Mise à jour périodique de la météo
         setInterval(updateWeather, WEATHER_UPDATE_INTERVAL);
-
-        // Données d'exemple pour les tâches
-        const todos = {
-            "Travail": [
-                {
-                    text: "Finaliser le rapport mensuel",
-                    completed: false,
-                    dueDate: "2024-03-20",
-                    priority: "high"
-                },
-                {
-                    text: "Préparer la présentation client",
-                    completed: false,
-                    dueDate: "2024-03-22",
-                    priority: "medium"
-                },
-                {
-                    text: "Répondre aux emails en attente",
-                    completed: false,
-                    dueDate: "2024-03-19",
-                    priority: "high"
-                },
-                {
-                    text: "Mettre à jour la documentation",
-                    completed: true,
-                    dueDate: "2024-03-15",
-                    priority: "low"
-                }
-            ],
-            "Personnel": [
-                {
-                    text: "Faire les courses",
-                    completed: false,
-                    dueDate: "2024-03-18",
-                    priority: "medium"
-                },
-                {
-                    text: "Rendre les livres à la bibliothèque",
-                    completed: true,
-                    dueDate: "2024-03-15",
-                    priority: "low"
-                },
-                {
-                    text: "Prendre RDV chez le dentiste",
-                    completed: false,
-                    dueDate: "2024-03-25",
-                    priority: "medium"
-                }
-            ],
-            "Projets": [
-                {
-                    text: "Mettre à jour le portfolio",
-                    completed: false,
-                    dueDate: "2024-03-25",
-                    priority: "high"
-                },
-                {
-                    text: "Finaliser le design du site",
-                    completed: false,
-                    dueDate: "2024-03-28",
-                    priority: "high"
-                },
-                {
-                    text: "Réviser le code",
-                    completed: false,
-                    dueDate: "2024-03-21",
-                    priority: "medium"
-                }
-            ]
-        };
-
-        // Fonction pour formater la date
-        function formatTodoDate(dateString) {
-            const date = new Date(dateString);
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
-            if (date.toDateString() === today.toDateString()) {
-                return "Aujourd'hui";
-            } else if (date.toDateString() === tomorrow.toDateString()) {
-                return "Demain";
-            } else {
-                return date.toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'long'
-                });
-            }
-        }
-
-        // Fonction pour mettre à jour la liste des tâches
-        function updateTodoList() {
-            const todoList = document.getElementById('todoList');
-            todoList.innerHTML = '';
-
-            for (const [section, items] of Object.entries(todos)) {
-                const sectionDiv = document.createElement('div');
-                sectionDiv.className = 'todo-section';
-                
-                const sectionHeader = document.createElement('div');
-                sectionHeader.className = 'todo-section-header';
-                
-                const sectionTitle = document.createElement('div');
-                sectionTitle.className = 'todo-section-title';
-                sectionTitle.innerHTML = `
-                    <i class="fas fa-folder"></i>
-                    ${section}
-                    <span class="todo-section-count">${items.length}</span>
-                `;
-                
-                sectionHeader.appendChild(sectionTitle);
-                sectionDiv.appendChild(sectionHeader);
-
-                const todoItems = document.createElement('div');
-                todoItems.className = 'todo-items';
-
-                items.forEach(item => {
-                    const todoItem = document.createElement('div');
-                    todoItem.className = 'todo-item';
-                    todoItem.innerHTML = `
-                        <div class="todo-checkbox ${item.completed ? 'checked' : ''}" onclick="toggleTodo('${section}', '${item.text}')"></div>
-                        <div class="todo-content">
-                            <div class="todo-text ${item.completed ? 'completed' : ''}">${item.text}</div>
-                            <div class="todo-due-date">${formatTodoDate(item.dueDate)}</div>
-                        </div>
-                        <div class="todo-priority ${item.priority}">${item.priority}</div>
-                    `;
-                    todoItems.appendChild(todoItem);
-                });
-
-                sectionDiv.appendChild(todoItems);
-                todoList.appendChild(sectionDiv);
-            }
-        }
-
-        // Fonction pour basculer l'état d'une tâche
-        function toggleTodo(section, text) {
-            const item = todos[section].find(todo => todo.text === text);
-            if (item) {
-                item.completed = !item.completed;
-                updateTodoList();
-            }
-        }
-
-        // Mise à jour initiale de la liste des tâches
-        updateTodoList();
-
-        // Données d'exemple pour les OKR et habitudes
-        const okrData = {
-            "Objectifs Professionnels": [
-                {
-                    title: "Améliorer la performance du site",
-                    progress: 75,
-                    keyResults: [
-                        { text: "Temps de chargement < 2s", progress: 80 },
-                        { text: "Score Lighthouse > 90", progress: 65 },
-                        { text: "Réduire les erreurs 404", progress: 90 }
-                    ]
-                },
-                {
-                    title: "Formation continue",
-                    progress: 60,
-                    keyResults: [
-                        { text: "Compléter 3 cours en ligne", progress: 66 },
-                        { text: "Obtenir 2 certifications", progress: 50 }
-                    ]
-                }
-            ],
-            "Habitudes": [
-                {
-                    title: "Lecture quotidienne",
-                    streak: 5,
-                    days: [true, true, true, true, true, false, false],
-                    goal: "30 minutes"
-                },
-                {
-                    title: "Exercice physique",
-                    streak: 3,
-                    days: [true, true, true, false, false, false, false],
-                    goal: "20 minutes"
-                },
-                {
-                    title: "Méditation",
-                    streak: 7,
-                    days: [true, true, true, true, true, true, true],
-                    goal: "10 minutes"
-                }
-            ]
-        };
-
-        // Fonction pour mettre à jour les OKR et habitudes
-        function updateOKRList() {
-            const okrList = document.getElementById('okrList');
-            okrList.innerHTML = '';
-
-            // Affichage des OKR
-            const okrSection = document.createElement('div');
-            okrSection.className = 'okr-section';
-            okrSection.innerHTML = `
-                <div class="okr-section-title">
-                    <i class="fas fa-bullseye"></i>
-                    Objectifs Professionnels
-                </div>
-            `;
-
-            okrData["Objectifs Professionnels"].forEach(okr => {
-                const okrItem = document.createElement('div');
-                okrItem.className = 'okr-item';
-                okrItem.innerHTML = `
-                    <div class="okr-header">
-                        <div class="okr-title">${okr.title}</div>
-                        <div class="okr-progress">${okr.progress}%</div>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: ${okr.progress}%"></div>
-                    </div>
-                    ${okr.keyResults.map(kr => `
-                        <div class="okr-item" style="margin-top: 8px; margin-left: 12px;">
-                            <div class="okr-header">
-                                <div class="okr-title" style="font-size: 0.85em;">${kr.text}</div>
-                                <div class="okr-progress">${kr.progress}%</div>
-                            </div>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill" style="width: ${kr.progress}%"></div>
-                            </div>
-                        </div>
-                    `).join('')}
-                `;
-                okrSection.appendChild(okrItem);
-            });
-
-            okrList.appendChild(okrSection);
-
-            // Affichage des habitudes
-            const habitsSection = document.createElement('div');
-            habitsSection.className = 'okr-section';
-            habitsSection.innerHTML = `
-                <div class="okr-section-title">
-                    <i class="fas fa-calendar-check"></i>
-                    Habitudes
-                </div>
-            `;
-
-            okrData["Habitudes"].forEach(habit => {
-                const habitItem = document.createElement('div');
-                habitItem.className = 'okr-item';
-                
-                const today = new Date().getDay();
-                const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-                
-                habitItem.innerHTML = `
-                    <div class="okr-header">
-                        <div class="okr-title">${habit.title}</div>
-                        <div class="okr-progress">${habit.goal}</div>
-                    </div>
-                    <div class="habits-grid">
-                        ${days.map((day, index) => `
-                            <div class="habit-day ${habit.days[index] ? 'completed' : ''} ${index === today ? 'today' : ''}">
-                                ${day}
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="streak-counter">
-                        <i class="fas fa-fire"></i>
-                        ${habit.streak} jours consécutifs
-                    </div>
-                `;
-                habitsSection.appendChild(habitItem);
-            });
-
-            okrList.appendChild(habitsSection);
-        }
-
-        // Mise à jour initiale
-        updateOKRList();
     </script>
 </body>
 </html> 

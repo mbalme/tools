@@ -566,11 +566,26 @@
             CACHE_PREFIX: 'trakt_metadata_',
             CACHE_EXPIRY: 24 * 60 * 60 * 1000, // 24 heures en millisecondes
             ERROR_PREFIX: 'trakt_metadata_error_',
-            ERROR_EXPIRY: 1 * 60 * 60 * 1000, // 1 heure en millisecondes (réduit de 7 jours à 1 heure)
+            ERROR_EXPIRY: 24 * 60 * 60 * 1000, // 24 heures en millisecondes (augmenté de 1h à 24h)
+            BACKGROUND_REFRESH_PREFIX: 'trakt_metadata_refreshing_',
+            BACKGROUND_REFRESH_DURATION: 30 * 60 * 1000, // 30 minutes pour éviter les rechargements multiples (augmenté de 5min à 30min)
+            LAST_REFRESH_PREFIX: 'trakt_metadata_last_refresh_',
+            MIN_REFRESH_INTERVAL: 6 * 60 * 60 * 1000, // 6 heures minimum entre les rechargements
 
             // Fonction pour nettoyer les métadonnées et ne garder que l'essentiel
             cleanMetadata(metadata) {
                 if (!metadata) return null;
+                
+                // Nettoyer les release_dates pour ne garder que les données françaises
+                let cleanedReleaseDates = null;
+                if (metadata.release_dates?.results) {
+                    const frRelease = metadata.release_dates.results.find(r => r.iso_3166_1 === 'FR');
+                    if (frRelease) {
+                        cleanedReleaseDates = {
+                            results: [frRelease]
+                        };
+                    }
+                }
                 
                 // Garder uniquement les champs essentiels
                 const essentialFields = {
@@ -578,7 +593,7 @@
                     title: metadata.title,
                     vote_average: metadata.vote_average,
                     release_date: metadata.release_date,
-                    release_dates: metadata.release_dates,
+                    release_dates: cleanedReleaseDates,
                     first_air_date: metadata.first_air_date,
                     last_air_date: metadata.last_air_date,
                     number_of_seasons: metadata.number_of_seasons,
@@ -596,6 +611,122 @@
                 return essentialFields;
             },
 
+            // Fonction pour nettoyer automatiquement le cache quand le quota est dépassé
+            cleanCacheForQuota() {
+                try {
+                    console.log('Quota dépassé, nettoyage automatique du cache...');
+                    
+                    // Récupérer toutes les entrées du cache avec leur taille et timestamp
+                    const cacheEntries = [];
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || 
+                            key.startsWith(this.ERROR_PREFIX) || 
+                            key.startsWith(this.BACKGROUND_REFRESH_PREFIX) ||
+                            key.startsWith(this.LAST_REFRESH_PREFIX)) {
+                            
+                            const value = localStorage.getItem(key);
+                            if (value) {
+                                try {
+                                    const { timestamp } = JSON.parse(value);
+                                    const size = new Blob([value]).size;
+                                    cacheEntries.push({ key, size, timestamp, value });
+                                } catch (error) {
+                                    // Entrée corrompue, la supprimer
+                                    localStorage.removeItem(key);
+                                }
+                            }
+                        }
+                    });
+
+                    // Trier par ancienneté (plus ancien en premier)
+                    cacheEntries.sort((a, b) => a.timestamp - b.timestamp);
+
+                    // Supprimer les entrées les plus anciennes jusqu'à libérer au moins 1MB
+                    const targetSize = 1024 * 1024; // 1MB
+                    let freedSize = 0;
+                    let removedCount = 0;
+
+                    for (const entry of cacheEntries) {
+                        if (freedSize >= targetSize) break;
+                        
+                        localStorage.removeItem(entry.key);
+                        freedSize += entry.size;
+                        removedCount++;
+                    }
+
+                    console.log(`Nettoyage automatique: ${removedCount} entrées supprimées, ${(freedSize / 1024).toFixed(2)} KB libérés`);
+                    return { removedCount, freedSize };
+                } catch (error) {
+                    console.error('Erreur lors du nettoyage automatique pour quota:', error);
+                    return { removedCount: 0, freedSize: 0 };
+                }
+            },
+
+            // Fonction pour vérifier l'espace disponible
+            checkAvailableSpace() {
+                try {
+                    let totalSize = 0;
+                    const testKey = 'quota_test';
+                    const testValue = 'x'.repeat(1024); // 1KB de test
+                    
+                    // Calculer la taille actuelle du cache
+                    Object.keys(localStorage).forEach(key => {
+                        const value = localStorage.getItem(key);
+                        if (value) {
+                            totalSize += new Blob([value]).size;
+                        }
+                    });
+
+                    // Essayer d'ajouter une entrée de test
+                    try {
+                        localStorage.setItem(testKey, testValue);
+                        localStorage.removeItem(testKey);
+                        return { available: true, currentSize: totalSize };
+                    } catch (error) {
+                        return { available: false, currentSize: totalSize };
+                    }
+                } catch (error) {
+                    return { available: false, currentSize: 0 };
+                }
+            },
+
+            // Fonction pour nettoyer les métadonnées et ne garder que l'essentiel (version ultra-compressée)
+            cleanMetadataUltra(metadata) {
+                if (!metadata) return null;
+                
+                // Nettoyer les release_dates pour ne garder que les données françaises
+                let cleanedReleaseDates = null;
+                if (metadata.release_dates?.results) {
+                    const frRelease = metadata.release_dates.results.find(r => r.iso_3166_1 === 'FR');
+                    if (frRelease) {
+                        cleanedReleaseDates = {
+                            results: [frRelease]
+                        };
+                    }
+                }
+                
+                // Version ultra-compressée pour économiser l'espace
+                const ultraFields = {
+                    id: metadata.id,
+                    t: metadata.title?.substring(0, 50), // titre tronqué
+                    rd: metadata.release_date,
+                    rds: cleanedReleaseDates, // release_dates nettoyées
+                    fad: metadata.first_air_date,
+                    lad: metadata.last_air_date,
+                    nos: metadata.number_of_seasons,
+                    pp: metadata.poster_path,
+                    s: metadata.seasons?.map(season => ({
+                        sn: season.season_number,
+                        ec: season.episode_count,
+                        ad: season.air_date,
+                        pp: season.poster_path
+                    })),
+                    _ts: Date.now()
+                };
+
+                return ultraFields;
+            },
+
             getCacheKey(type, id) {
                 return `${this.CACHE_PREFIX}${type}_${id}`;
             },
@@ -604,10 +735,77 @@
                 return `${this.ERROR_PREFIX}${type}_${id}`;
             },
 
+            getRefreshingKey(type, id) {
+                return `${this.BACKGROUND_REFRESH_PREFIX}${type}_${id}`;
+            },
+
+            getLastRefreshKey(type, id) {
+                return `${this.LAST_REFRESH_PREFIX}${type}_${id}`;
+            },
+
+            isRefreshing(type, id) {
+                try {
+                    const key = this.getRefreshingKey(type, id);
+                    const refreshingData = localStorage.getItem(key);
+                    if (!refreshingData) return false;
+
+                    const { timestamp } = JSON.parse(refreshingData);
+                    return Date.now() - timestamp < this.BACKGROUND_REFRESH_DURATION;
+                } catch (error) {
+                    return false;
+                }
+            },
+
+            setRefreshing(type, id) {
+                try {
+                    const key = this.getRefreshingKey(type, id);
+                    const refreshingData = {
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(key, JSON.stringify(refreshingData));
+                } catch (error) {
+                    console.error('Erreur lors de la mise en cache du statut de rechargement:', error);
+                }
+            },
+
+            clearRefreshing(type, id) {
+                try {
+                    const key = this.getRefreshingKey(type, id);
+                    localStorage.removeItem(key);
+                } catch (error) {
+                    console.error('Erreur lors de la suppression du statut de rechargement:', error);
+                }
+            },
+
+            canRefresh(type, id) {
+                try {
+                    const key = this.getLastRefreshKey(type, id);
+                    const lastRefreshData = localStorage.getItem(key);
+                    if (!lastRefreshData) return true;
+
+                    const { timestamp } = JSON.parse(lastRefreshData);
+                    return Date.now() - timestamp > this.MIN_REFRESH_INTERVAL;
+                } catch (error) {
+                    return true;
+                }
+            },
+
+            setLastRefresh(type, id) {
+                try {
+                    const key = this.getLastRefreshKey(type, id);
+                    const lastRefreshData = {
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(key, JSON.stringify(lastRefreshData));
+                } catch (error) {
+                    console.error('Erreur lors de la mise en cache de la dernière actualisation:', error);
+                }
+            },
+
             isErrorCached(type, id) {
                 try {
                     const key = this.getErrorKey(type, id);
-                    const errorData = sessionStorage.getItem(key);
+                    const errorData = localStorage.getItem(key);
                     if (!errorData) return false;
 
                     const { timestamp } = JSON.parse(errorData);
@@ -623,7 +821,7 @@
                     const errorData = {
                         timestamp: Date.now()
                     };
-                    sessionStorage.setItem(key, JSON.stringify(errorData));
+                    localStorage.setItem(key, JSON.stringify(errorData));
                 } catch (error) {
                     console.error('Erreur lors de la mise en cache de l\'erreur:', error);
                 }
@@ -637,18 +835,93 @@
                     }
 
                     const key = this.getCacheKey(type, id);
-                    const cached = sessionStorage.getItem(key);
+                    const cached = localStorage.getItem(key);
                     if (!cached) return null;
 
                     const { data, timestamp } = JSON.parse(cached);
-                    if (Date.now() - timestamp > this.CACHE_EXPIRY) {
-                        this.clearCachedMetadata(type, id);
-                        return null;
+                    const isExpired = Date.now() - timestamp > this.CACHE_EXPIRY;
+                    
+                    if (isExpired) {
+                        // Si expiré, pas déjà en cours de rechargement, et assez de temps écoulé depuis le dernier rechargement
+                        if (!this.isRefreshing(type, id) && this.canRefresh(type, id)) {
+                            console.log(`Cache expiré pour ${type} ID: ${id}, lancement du rechargement en tâche de fond`);
+                            this.refreshInBackground(type, id);
+                        }
+                        
+                        // Retourner quand même les données expirées pour l'utilisateur
+                        return this.normalizeMetadata(data);
                     }
-                    return data;
+                    
+                    return this.normalizeMetadata(data);
                 } catch (error) {
                     console.error('Erreur lors de la lecture du cache:', error);
                     return null;
+                }
+            },
+
+            // Fonction pour normaliser les métadonnées (gère les formats compressés et normaux)
+            normalizeMetadata(data) {
+                if (!data) return null;
+                
+                // Vérifier si c'est un format ultra-compressé
+                if (data.t && data.rd) {
+                    // Format ultra-compressé, convertir en format normal
+                    return {
+                        id: data.id,
+                        title: data.t,
+                        release_date: data.rd,
+                        release_dates: data.rds, // release_dates nettoyées
+                        first_air_date: data.fad,
+                        last_air_date: data.lad,
+                        number_of_seasons: data.nos,
+                        poster_path: data.pp,
+                        seasons: data.s?.map(season => ({
+                            season_number: season.sn,
+                            episode_count: season.ec,
+                            air_date: season.ad,
+                            poster_path: season.pp
+                        }))
+                    };
+                }
+                
+                // Format normal, retourner tel quel
+                return data;
+            },
+
+            async refreshInBackground(type, id) {
+                try {
+                    // Marquer comme en cours de rechargement
+                    this.setRefreshing(type, id);
+                    
+                    console.log(`Rechargement en tâche de fond pour ${type} ID: ${id}`);
+                    
+                    // Récupérer les nouvelles métadonnées
+                    const url = wsConfig.buildServeApiUrl(type, id);
+                    const response = await fetch(url);
+                    
+                    if (response.status === 404) {
+                        console.warn(`Métadonnées non trouvées pour ${type} ID: ${id} (rechargement en tâche de fond)`);
+                        this.cacheError(type, id);
+                        return;
+                    }
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log(`Métadonnées rechargées en tâche de fond pour ${type} ID: ${id}`);
+                    
+                    // Mettre à jour le cache avec les nouvelles données
+                    this.setCachedMetadata(type, id, data);
+                    this.setLastRefresh(type, id);
+                    
+                } catch (error) {
+                    console.error(`Erreur lors du rechargement en tâche de fond pour ${type} ID: ${id}:`, error);
+                    this.cacheError(type, id);
+                } finally {
+                    // Nettoyer le statut de rechargement
+                    this.clearRefreshing(type, id);
                 }
             },
 
@@ -659,16 +932,69 @@
                         data: this.cleanMetadata(metadata),
                         timestamp: Date.now()
                     };
-                    sessionStorage.setItem(key, JSON.stringify(cacheData));
+                    localStorage.setItem(key, JSON.stringify(cacheData));
                 } catch (error) {
-                    console.error('Erreur lors de l\'écriture du cache:', error);
+                    if (error.name === 'QuotaExceededError') {
+                        console.log('Quota dépassé, tentative de nettoyage automatique...');
+                        
+                        // Nettoyer automatiquement le cache
+                        const cleanupResult = this.cleanCacheForQuota();
+                        
+                        if (cleanupResult.removedCount > 0) {
+                            // Réessayer avec les données normales
+                            try {
+                                const cacheData = {
+                                    data: this.cleanMetadata(metadata),
+                                    timestamp: Date.now()
+                                };
+                                localStorage.setItem(key, JSON.stringify(cacheData));
+                                console.log('Cache mis à jour après nettoyage automatique');
+                                return;
+                            } catch (retryError) {
+                                console.log('Échec après nettoyage, tentative avec données ultra-compressées...');
+                            }
+                        }
+                        
+                        // Si le nettoyage n'a pas suffi, essayer avec des données ultra-compressées
+                        try {
+                            const ultraCacheData = {
+                                data: this.cleanMetadataUltra(metadata),
+                                timestamp: Date.now()
+                            };
+                            localStorage.setItem(key, JSON.stringify(ultraCacheData));
+                            console.log('Cache mis à jour avec données ultra-compressées');
+                        } catch (ultraError) {
+                            console.error('Impossible de mettre en cache même avec les données ultra-compressées:', ultraError);
+                            
+                            // En dernier recours, supprimer l'entrée la plus ancienne et réessayer
+                            try {
+                                const oldestKey = this.findOldestCacheEntry();
+                                if (oldestKey) {
+                                    localStorage.removeItem(oldestKey);
+                                    const ultraCacheData = {
+                                        data: this.cleanMetadataUltra(metadata),
+                                        timestamp: Date.now()
+                                    };
+                                    localStorage.setItem(key, JSON.stringify(ultraCacheData));
+                                    console.log('Cache mis à jour après suppression de l\'entrée la plus ancienne');
+                                }
+                            } catch (finalError) {
+                                console.error('Échec final de mise en cache:', finalError);
+                            }
+                        }
+                    } else {
+                        console.error('Erreur lors de l\'écriture du cache:', error);
+                    }
                 }
             },
 
             clearCachedMetadata(type, id) {
                 try {
                     const key = this.getCacheKey(type, id);
-                    sessionStorage.removeItem(key);
+                    localStorage.removeItem(key);
+                    // Nettoyer aussi le statut de rechargement et la dernière actualisation
+                    this.clearRefreshing(type, id);
+                    localStorage.removeItem(this.getLastRefreshKey(type, id));
                 } catch (error) {
                     console.error('Erreur lors de la suppression du cache:', error);
                 }
@@ -676,10 +1002,13 @@
 
             clearAllCache() {
                 try {
-                    // Supprimer toutes les entrées du cache et des erreurs
-                    Object.keys(sessionStorage).forEach(key => {
-                        if (key.startsWith(this.CACHE_PREFIX) || key.startsWith(this.ERROR_PREFIX)) {
-                            sessionStorage.removeItem(key);
+                    // Supprimer toutes les entrées du cache, des erreurs et des rechargements
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || 
+                            key.startsWith(this.ERROR_PREFIX) || 
+                            key.startsWith(this.BACKGROUND_REFRESH_PREFIX) ||
+                            key.startsWith(this.LAST_REFRESH_PREFIX)) {
+                            localStorage.removeItem(key);
                         }
                     });
                 } catch (error) {
@@ -690,9 +1019,12 @@
             getCacheSize() {
                 try {
                     let totalSize = 0;
-                    Object.keys(sessionStorage).forEach(key => {
-                        if (key.startsWith(this.CACHE_PREFIX) || key.startsWith(this.ERROR_PREFIX)) {
-                            const value = sessionStorage.getItem(key);
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || 
+                            key.startsWith(this.ERROR_PREFIX) || 
+                            key.startsWith(this.BACKGROUND_REFRESH_PREFIX) ||
+                            key.startsWith(this.LAST_REFRESH_PREFIX)) {
+                            const value = localStorage.getItem(key);
                             if (value) {
                                 totalSize += new Blob([value]).size;
                             }
@@ -703,8 +1035,480 @@
                     console.error('Erreur lors du calcul de la taille du cache:', error);
                     return 0;
                 }
+            },
+
+            // Fonction pour nettoyer automatiquement le cache ancien
+            cleanOldCache() {
+                try {
+                    const now = Date.now();
+                    let cleanedCount = 0;
+                    let cleanedSize = 0;
+
+                    // Nettoyer les entrées de cache expirées depuis plus de 7 jours
+                    const OLD_CACHE_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 jours
+                    
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || 
+                            key.startsWith(this.ERROR_PREFIX) || 
+                            key.startsWith(this.BACKGROUND_REFRESH_PREFIX) ||
+                            key.startsWith(this.LAST_REFRESH_PREFIX)) {
+                            
+                            try {
+                                const value = localStorage.getItem(key);
+                                if (value) {
+                                    const { timestamp } = JSON.parse(value);
+                                    if (now - timestamp > OLD_CACHE_THRESHOLD) {
+                                        const size = new Blob([value]).size;
+                                        localStorage.removeItem(key);
+                                        cleanedCount++;
+                                        cleanedSize += size;
+                                    }
+                                }
+                            } catch (error) {
+                                // Si l'entrée est corrompue, la supprimer
+                                localStorage.removeItem(key);
+                                cleanedCount++;
+                            }
+                        }
+                    });
+
+                    if (cleanedCount > 0) {
+                        console.log(`Nettoyage automatique du cache: ${cleanedCount} entrées supprimées, ${(cleanedSize / 1024).toFixed(2)} KB libérés`);
+                    }
+
+                    return { cleanedCount, cleanedSize };
+                } catch (error) {
+                    console.error('Erreur lors du nettoyage automatique du cache:', error);
+                    return { cleanedCount: 0, cleanedSize: 0 };
+                }
+            },
+
+            // Fonction pour obtenir des statistiques du cache
+            getCacheStats() {
+                try {
+                    const stats = {
+                        totalEntries: 0,
+                        cacheEntries: 0,
+                        errorEntries: 0,
+                        refreshingEntries: 0,
+                        lastRefreshEntries: 0,
+                        totalSize: 0,
+                        oldestEntry: null,
+                        newestEntry: null
+                    };
+
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || 
+                            key.startsWith(this.ERROR_PREFIX) || 
+                            key.startsWith(this.BACKGROUND_REFRESH_PREFIX) ||
+                            key.startsWith(this.LAST_REFRESH_PREFIX)) {
+                            
+                            const value = localStorage.getItem(key);
+                            if (value) {
+                                stats.totalEntries++;
+                                stats.totalSize += new Blob([value]).size;
+
+                                if (key.startsWith(this.CACHE_PREFIX)) stats.cacheEntries++;
+                                if (key.startsWith(this.ERROR_PREFIX)) stats.errorEntries++;
+                                if (key.startsWith(this.BACKGROUND_REFRESH_PREFIX)) stats.refreshingEntries++;
+                                if (key.startsWith(this.LAST_REFRESH_PREFIX)) stats.lastRefreshEntries++;
+
+                                try {
+                                    const { timestamp } = JSON.parse(value);
+                                    if (!stats.oldestEntry || timestamp < stats.oldestEntry) {
+                                        stats.oldestEntry = timestamp;
+                                    }
+                                    if (!stats.newestEntry || timestamp > stats.newestEntry) {
+                                        stats.newestEntry = timestamp;
+                                    }
+                                } catch (error) {
+                                    // Ignorer les entrées corrompues
+                                }
+                            }
+                        }
+                    });
+
+                    return stats;
+                } catch (error) {
+                    console.error('Erreur lors du calcul des statistiques du cache:', error);
+                    return null;
+                }
+            },
+
+            // Fonction pour trouver l'entrée de cache la plus ancienne
+            findOldestCacheEntry() {
+                try {
+                    let oldestKey = null;
+                    let oldestTimestamp = Date.now();
+
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(this.CACHE_PREFIX) || 
+                            key.startsWith(this.ERROR_PREFIX) || 
+                            key.startsWith(this.BACKGROUND_REFRESH_PREFIX) ||
+                            key.startsWith(this.LAST_REFRESH_PREFIX)) {
+                            
+                            const value = localStorage.getItem(key);
+                            if (value) {
+                                try {
+                                    const { timestamp } = JSON.parse(value);
+                                    if (timestamp < oldestTimestamp) {
+                                        oldestTimestamp = timestamp;
+                                        oldestKey = key;
+                                    }
+                                } catch (error) {
+                                    // Ignorer les entrées corrompues
+                                }
+                            }
+                        }
+                    });
+
+                    return oldestKey;
+                } catch (error) {
+                    console.error('Erreur lors de la recherche de l\'entrée la plus ancienne:', error);
+                    return null;
+                }
             }
         };
+
+        // Configuration du cache pour les anniversaires
+        const BIRTHDAY_CACHE_KEY = 'birthday_data_cache_full';
+        const BIRTHDAY_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 heures en millisecondes
+        const BIRTHDAY_REFRESHING_KEY = 'birthday_data_refreshing';
+        const BIRTHDAY_REFRESH_DURATION = 30 * 60 * 1000; // 30 minutes pour éviter les rechargements multiples (augmenté de 5min à 30min)
+        const BIRTHDAY_LAST_REFRESH_KEY = 'birthday_data_last_refresh';
+        const BIRTHDAY_MIN_REFRESH_INTERVAL = 6 * 60 * 60 * 1000; // 6 heures minimum entre les rechargements
+
+        // Fonction pour nettoyer les données des personnes et ne garder que l'essentiel
+        function cleanPeopleData(data) {
+            if (!data || !Array.isArray(data)) return [];
+            
+            return data.map(person => ({
+                who: person.who,
+                birthday: person.birthday,
+                deathDate: person.deathDate,
+                pic: person.pic,
+                _timestamp: Date.now()
+            }));
+        }
+
+        // Fonction pour vérifier si le rechargement des anniversaires est en cours
+        function isBirthdayRefreshing() {
+            try {
+                const refreshingData = localStorage.getItem(BIRTHDAY_REFRESHING_KEY);
+                if (!refreshingData) return false;
+
+                const { timestamp } = JSON.parse(refreshingData);
+                return Date.now() - timestamp < BIRTHDAY_REFRESH_DURATION;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // Fonction pour marquer le rechargement des anniversaires comme en cours
+        function setBirthdayRefreshing() {
+            try {
+                const refreshingData = {
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(BIRTHDAY_REFRESHING_KEY, JSON.stringify(refreshingData));
+            } catch (error) {
+                console.error('Erreur lors de la mise en cache du statut de rechargement des anniversaires:', error);
+            }
+        }
+
+        // Fonction pour nettoyer le statut de rechargement des anniversaires
+        function clearBirthdayRefreshing() {
+            try {
+                localStorage.removeItem(BIRTHDAY_REFRESHING_KEY);
+            } catch (error) {
+                console.error('Erreur lors de la suppression du statut de rechargement des anniversaires:', error);
+            }
+        }
+
+        // Fonction pour vérifier si on peut recharger les anniversaires
+        function canRefreshBirthday() {
+            try {
+                const lastRefreshData = localStorage.getItem(BIRTHDAY_LAST_REFRESH_KEY);
+                if (!lastRefreshData) return true;
+
+                const { timestamp } = JSON.parse(lastRefreshData);
+                return Date.now() - timestamp > BIRTHDAY_MIN_REFRESH_INTERVAL;
+            } catch (error) {
+                return true;
+            }
+        }
+
+        // Fonction pour marquer la dernière actualisation des anniversaires
+        function setBirthdayLastRefresh() {
+            try {
+                const lastRefreshData = {
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(BIRTHDAY_LAST_REFRESH_KEY, JSON.stringify(lastRefreshData));
+            } catch (error) {
+                console.error('Erreur lors de la mise en cache de la dernière actualisation des anniversaires:', error);
+            }
+        }
+
+        // Fonction pour recharger les données des anniversaires en tâche de fond
+        async function refreshBirthdayDataInBackground() {
+            try {
+                // Marquer comme en cours de rechargement
+                setBirthdayRefreshing();
+                
+                console.log('Rechargement en tâche de fond des données des anniversaires...');
+                
+                const response = await fetch(wsConfig.buildUrl('api/calBirthday/full'));
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Données des anniversaires rechargées en tâche de fond:', data.length, 'personnes');
+                
+                // Nettoyer et mettre en cache les nouvelles données
+                const cleanedData = cleanPeopleData(data);
+                setCachedBirthdayData(cleanedData);
+                setBirthdayLastRefresh();
+                
+            } catch (error) {
+                console.error('Erreur lors du rechargement en tâche de fond des données des anniversaires:', error);
+            } finally {
+                // Nettoyer le statut de rechargement
+                clearBirthdayRefreshing();
+            }
+        }
+
+        async function fetchPeopleData() {
+            try {
+                // Vérifier le cache d'abord
+                const cachedData = getCachedBirthdayData();
+                if (cachedData) {
+                    console.log('Données des anniversaires récupérées depuis le cache');
+                    return cachedData;
+                }
+
+                // Vérifier si les données sont expirées mais disponibles
+                const expiredData = getCachedBirthdayData(true);
+                if (expiredData && !isBirthdayRefreshing() && canRefreshBirthday()) {
+                    console.log('Données des anniversaires expirées, lancement du rechargement en tâche de fond');
+                    // Lancer le rechargement en tâche de fond
+                    refreshBirthdayDataInBackground();
+                    // Retourner les données expirées pour l'utilisateur
+                    return expiredData;
+                }
+
+                console.log('Récupération des données des personnes depuis l\'API...');
+                const response = await fetch(wsConfig.buildUrl('api/calBirthday/full'));
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Données des personnes reçues:', data.length, 'personnes');
+                
+                // Nettoyer et mettre en cache les nouvelles données
+                const cleanedData = cleanPeopleData(data);
+                setCachedBirthdayData(cleanedData);
+                setBirthdayLastRefresh();
+                
+                return cleanedData;
+            } catch (error) {
+                console.error('Erreur lors de la récupération des données des personnes:', error);
+                
+                // En cas d'erreur, essayer de récupérer les données en cache même expirées
+                const cachedData = getCachedBirthdayData(true);
+                if (cachedData) {
+                    console.log('Utilisation des données en cache (expirées) en raison de l\'erreur API');
+                    return cachedData;
+                }
+                
+                return [];
+            }
+        }
+
+        // Fonction pour récupérer les données en cache
+        function getCachedBirthdayData(allowExpired = false) {
+            try {
+                // Utiliser localStorage au lieu de sessionStorage pour la persistance
+                const cached = localStorage.getItem(BIRTHDAY_CACHE_KEY);
+                if (!cached) return null;
+
+                const { data, timestamp } = JSON.parse(cached);
+                const now = Date.now();
+                
+                if (!allowExpired && (now - timestamp > BIRTHDAY_CACHE_DURATION)) {
+                    console.log('Cache des anniversaires expiré');
+                    return null;
+                }
+                
+                return normalizeBirthdayData(data);
+            } catch (error) {
+                console.error('Erreur lors de la lecture du cache des anniversaires:', error);
+                return null;
+            }
+        }
+
+        // Fonction pour normaliser les données des anniversaires (gère les formats compressés)
+        function normalizeBirthdayData(data) {
+            if (!data || !Array.isArray(data)) return [];
+            
+            return data.map(person => {
+                // Vérifier si c'est un format compressé
+                if (person.w && person.b) {
+                    return {
+                        who: person.w,
+                        birthday: person.b,
+                        deathDate: person.d,
+                        pic: person.pic || null
+                    };
+                }
+                
+                // Format normal, retourner tel quel
+                return person;
+            });
+        }
+
+        // Fonction pour mettre en cache les données
+        function setCachedBirthdayData(data) {
+            try {
+                const cacheData = {
+                    data: data,
+                    timestamp: Date.now()
+                };
+                
+                // Utiliser localStorage au lieu de sessionStorage
+                localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify(cacheData));
+                console.log('Données des anniversaires mises en cache');
+            } catch (error) {
+                if (error.name === 'QuotaExceededError') {
+                    console.log('Quota dépassé pour les anniversaires, nettoyage automatique...');
+                    
+                    // Nettoyer automatiquement le cache des métadonnées pour libérer de l'espace
+                    const cleanupResult = metadataCache.cleanCacheForQuota();
+                    
+                    if (cleanupResult.removedCount > 0) {
+                        // Réessayer avec les données normales
+                        try {
+                            const cacheData = {
+                                data: data,
+                                timestamp: Date.now()
+                            };
+                            localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify(cacheData));
+                            console.log('Données des anniversaires mises en cache après nettoyage');
+                            return;
+                        } catch (retryError) {
+                            console.log('Échec après nettoyage, tentative avec données minimales...');
+                        }
+                    }
+                    
+                    // Si le nettoyage n'a pas suffi, essayer avec des données minimales
+                    try {
+                        localStorage.removeItem(BIRTHDAY_CACHE_KEY);
+                        const minimalData = data.map(person => ({
+                            w: person.who?.substring(0, 30), // nom tronqué
+                            b: person.birthday,
+                            d: person.deathDate
+                        }));
+                        localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify({
+                            data: minimalData,
+                            timestamp: Date.now()
+                        }));
+                        console.log('Données des anniversaires mises en cache (version minimale)');
+                    } catch (minimalError) {
+                        console.error('Impossible de mettre en cache même avec les données minimales:', minimalError);
+                        
+                        // En dernier recours, supprimer l'entrée la plus ancienne
+                        try {
+                            const oldestKey = metadataCache.findOldestCacheEntry();
+                            if (oldestKey) {
+                                localStorage.removeItem(oldestKey);
+                                const minimalData = data.map(person => ({
+                                    w: person.who?.substring(0, 20),
+                                    b: person.birthday,
+                                    d: person.deathDate
+                                }));
+                                localStorage.setItem(BIRTHDAY_CACHE_KEY, JSON.stringify({
+                                    data: minimalData,
+                                    timestamp: Date.now()
+                                }));
+                                console.log('Données des anniversaires mises en cache après suppression d\'entrée ancienne');
+                            }
+                        } catch (finalError) {
+                            console.error('Échec final de mise en cache des anniversaires:', finalError);
+                        }
+                    }
+                } else {
+                    console.error('Erreur lors de la mise en cache des anniversaires:', error);
+                }
+            }
+        }
+
+        // Fonction pour vider le cache des anniversaires
+        function clearBirthdayCache() {
+            try {
+                let cleanedSize = 0;
+                let cleanedCount = 0;
+                
+                // Calculer la taille avant suppression
+                const cached = localStorage.getItem(BIRTHDAY_CACHE_KEY);
+                if (cached) {
+                    cleanedSize += new Blob([cached]).size;
+                    cleanedCount++;
+                }
+                
+                const refreshing = localStorage.getItem(BIRTHDAY_REFRESHING_KEY);
+                if (refreshing) {
+                    cleanedSize += new Blob([refreshing]).size;
+                    cleanedCount++;
+                }
+                
+                const lastRefresh = localStorage.getItem(BIRTHDAY_LAST_REFRESH_KEY);
+                if (lastRefresh) {
+                    cleanedSize += new Blob([lastRefresh]).size;
+                    cleanedCount++;
+                }
+                
+                // Supprimer les entrées
+                localStorage.removeItem(BIRTHDAY_CACHE_KEY);
+                localStorage.removeItem(BIRTHDAY_REFRESHING_KEY);
+                localStorage.removeItem(BIRTHDAY_LAST_REFRESH_KEY);
+                
+                console.log('Cache des anniversaires vidé');
+                return { cleanedCount, cleanedSize };
+            } catch (error) {
+                console.error('Erreur lors du vidage du cache des anniversaires:', error);
+                return { cleanedCount: 0, cleanedSize: 0 };
+            }
+        }
+
+        // Fonction pour calculer la taille du cache des anniversaires
+        function getBirthdayCacheSize() {
+            try {
+                let totalSize = 0;
+                
+                // Taille du cache principal
+                const cached = localStorage.getItem(BIRTHDAY_CACHE_KEY);
+                if (cached) {
+                    totalSize += new Blob([cached]).size;
+                }
+                
+                // Taille du cache de rechargement
+                const refreshing = localStorage.getItem(BIRTHDAY_REFRESHING_KEY);
+                if (refreshing) {
+                    totalSize += new Blob([refreshing]).size;
+                }
+
+                // Taille du cache de dernière actualisation
+                const lastRefresh = localStorage.getItem(BIRTHDAY_LAST_REFRESH_KEY);
+                if (lastRefresh) {
+                    totalSize += new Blob([lastRefresh]).size;
+                }
+                
+                return totalSize;
+            } catch (error) {
+                console.error('Erreur lors du calcul de la taille du cache des anniversaires:', error);
+                return 0;
+            }
+        }
 
         async function fetchCSV(url) {
             try {
@@ -720,22 +1524,6 @@
                 console.error('Erreur lors de la récupération des données:', error);
                 document.getElementById('historyData').innerHTML = `<p>Erreur lors du chargement: ${error.message}</p>`;
                 return null;
-            }
-        }
-
-        async function fetchPeopleData() {
-            try {
-                console.log('Récupération des données des personnes...');
-                const response = await fetch(wsConfig.buildUrl('api/calBirthday/full'));
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log('Données des personnes reçues:', data.length, 'personnes');
-                return data;
-            } catch (error) {
-                console.error('Erreur lors de la récupération des données des personnes:', error);
-                return [];
             }
         }
 
@@ -871,49 +1659,49 @@
         }
 
         function getFrenchReleaseDate(metadata) {
-            console.log('getFrenchReleaseDate appelée avec:', metadata);
+            /*console.log('getFrenchReleaseDate appelée avec:', metadata);*/
             
             if (!metadata) {
-                console.log('Pas de métadonnées, retour null');
+                /*console.log('Pas de métadonnées, retour null');*/
                 return null;
             }
 
             // Si on a déjà une release_date de base, on l'utilise comme fallback
             const fallbackDate = metadata.release_date;
-            console.log('Date de fallback:', fallbackDate);
+            /*console.log('Date de fallback:', fallbackDate);*/
 
             // Vérifier si on a les release_dates avec les informations françaises
             if (!metadata.release_dates?.results) {
-                console.log('Pas de release_dates.results, utilisation du fallback');
+                /*console.log('Pas de release_dates.results, utilisation du fallback');*/
                 return fallbackDate;
             }
 
-            console.log('Release dates disponibles:', metadata.release_dates.results);
+            /*console.log('Release dates disponibles:', metadata.release_dates.results);*/
 
             // Chercher les informations françaises
             const frRelease = metadata.release_dates.results.find(r => r.iso_3166_1 === 'FR');
             if (!frRelease) {
-                console.log('Pas d\'informations françaises trouvées, utilisation du fallback');
+                /*console.log('Pas d\'informations françaises trouvées, utilisation du fallback');*/
                 return fallbackDate;
             }
 
-            console.log('Informations françaises trouvées:', frRelease);
+            /*console.log('Informations françaises trouvées:', frRelease);*/
 
             // Chercher la sortie en salle (type 3)
             const theatricalRelease = frRelease.release_dates.find(d => d.type === 3);
             if (theatricalRelease) {
-                console.log('Sortie en salle française trouvée:', theatricalRelease.release_date);
+                /*console.log('Sortie en salle française trouvée:', theatricalRelease.release_date);*/
                 return theatricalRelease.release_date;
             }
 
             // Si pas de sortie en salle, chercher la première date disponible
             if (frRelease.release_dates && frRelease.release_dates.length > 0) {
                 const firstRelease = frRelease.release_dates[0];
-                console.log('Première date française disponible:', firstRelease.release_date);
+                /*console.log('Première date française disponible:', firstRelease.release_date);*/
                 return firstRelease.release_date;
             }
 
-            console.log('Aucune date française trouvée, utilisation du fallback');
+            /*console.log('Aucune date française trouvée, utilisation du fallback');*/
             return fallbackDate;
         }
 
@@ -977,11 +1765,11 @@
                         const key = movieId;
                         contentDictionary.movies.add(key);
                         
-                        console.log(`Traitement du film ${row.title} (source: ${source}):`, {
+                        /*console.log(`Traitement du film ${row.title} (source: ${source}):`, {
                             trakt_id: row.trakt_id,
                             tmdb_id: row.tmdb_id,
                             movieId: movieId
-                        });
+                        });*/
                         
                         // Vérifier d'abord le cache
                         let metadata = metadataCache.getCachedMetadata('movie', row.tmdb_id);
@@ -991,11 +1779,11 @@
                         }
                         
                         const frenchReleaseDate = getFrenchReleaseDate(metadata);
-                        console.log(`Film ${row.title} (ID: ${row.tmdb_id}, source: ${source}):`, {
+                        /*console.log(`Film ${row.title} (ID: ${row.tmdb_id}, source: ${source}):`, {
                             originalReleaseDate: metadata?.release_date,
                             frenchReleaseDate: frenchReleaseDate,
                             metadata: metadata
-                        });
+                        });*/
                         
                         contentDictionary.movieDetails.set(key, {
                             id: movieId,
@@ -1091,31 +1879,73 @@
                 document.body.insertAdjacentHTML('beforeend', loadingIndicator);
                 const loadingElement = document.getElementById('loadingIndicator');
 
-                // Ajouter le bouton de vidage du cache
-                const clearCacheButton = `
+                // Nettoyage automatique du cache au démarrage
+                const cleanupResult = metadataCache.cleanOldCache();
+                if (cleanupResult.cleanedCount > 0) {
+                    console.log(`Nettoyage automatique effectué: ${cleanupResult.cleanedCount} entrées supprimées`);
+                }
+
+                // Ajouter le panneau de gestion du cache
+                const cachePanel = `
                     <div class="section">
                         <div class="cache-info">
-                            <span>Taille du cache: <span id="cacheSize">0</span> KB</span>
-                            <div style="display: flex; gap: 8px;">
-                                <button onclick="metadataCache.clearAllCache(); location.reload();" class="clear-cache-btn">
-                                    Vider le cache des métadonnées
-                                </button>
-                                <button onclick="forceRefreshMetadata();" class="clear-cache-btn" style="background-color: #ff6b35;">
-                                    Forcer le rechargement des métadonnées
-                                </button>
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <span>Taille du cache: <span id="cacheSize">0</span> KB</span>
+                                    <span style="font-size: 0.8em; color: var(--text-secondary);">
+                                        Entrées: <span id="cacheEntries">0</span> | 
+                                        Erreurs: <span id="cacheErrors">0</span> | 
+                                        Rechargements: <span id="cacheRefreshing">0</span>
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button onclick="cleanOldCacheAndReload();" class="clear-cache-btn" style="background-color: #4caf50;">
+                                        Nettoyer ancien cache
+                                    </button>
+                                    <button onclick="metadataCache.clearAllCache(); location.reload();" class="clear-cache-btn">
+                                        Vider cache métadonnées
+                                    </button>
+                                    <button onclick="clearBirthdayCache(); location.reload();" class="clear-cache-btn" style="background-color: #9c27b0;">
+                                        Vider cache anniversaires
+                                    </button>
+                                    <button onclick="forceRefreshMetadata();" class="clear-cache-btn" style="background-color: #ff6b35;">
+                                        Forcer rechargement
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
-                document.querySelector('.container').insertAdjacentHTML('afterbegin', clearCacheButton);
+                document.querySelector('.container').insertAdjacentHTML('afterbegin', cachePanel);
                 
-                // Mettre à jour la taille du cache
-                const updateCacheSize = () => {
-                    const size = metadataCache.getCacheSize();
-                    document.getElementById('cacheSize').textContent = (size / 1024).toFixed(2);
+                // Mettre à jour les informations du cache
+                const updateCacheInfo = () => {
+                    const metadataSize = metadataCache.getCacheSize();
+                    const birthdaySize = getBirthdayCacheSize();
+                    const totalSize = metadataSize + birthdaySize;
+                    document.getElementById('cacheSize').textContent = (totalSize / 1024).toFixed(2);
+                    
+                    // Mettre à jour les statistiques
+                    const stats = metadataCache.getCacheStats();
+                    if (stats) {
+                        document.getElementById('cacheEntries').textContent = stats.cacheEntries;
+                        document.getElementById('cacheErrors').textContent = stats.errorEntries;
+                        document.getElementById('cacheRefreshing').textContent = stats.refreshingEntries;
+                    }
+                    
+                    // Vérifier l'espace disponible
+                    const spaceInfo = metadataCache.checkAvailableSpace();
+                    if (!spaceInfo.available) {
+                        const cacheInfoElement = document.querySelector('.cache-info');
+                        if (cacheInfoElement && !cacheInfoElement.querySelector('.quota-warning')) {
+                            cacheInfoElement.insertAdjacentHTML('beforeend', 
+                                '<div class="quota-warning" style="color: #ff6b35; font-size: 0.8em; margin-top: 4px;">⚠️ Espace de stockage limité - Nettoyage automatique activé</div>'
+                            );
+                        }
+                    }
                 };
-                updateCacheSize();
-                setInterval(updateCacheSize, 5000);
+                updateCacheInfo();
+                setInterval(updateCacheInfo, 10000); // Mise à jour toutes les 10 secondes
 
                 console.log('Chargement de l\'historique...');
                 const historyCSV = await fetchCSV(historyUrl);
@@ -1174,12 +2004,12 @@
                                (movie.french_release_date ? new Date(movie.french_release_date).getFullYear() : 
                                (movie.metadata?.release_date ? new Date(movie.metadata.release_date).getFullYear() : null));
                     
-                    console.log(`Organisation du film ${movie.title}:`, {
+                    /*console.log(`Organisation du film ${movie.title}:`, {
                         watched_at: movie.watched_at,
                         french_release_date: movie.french_release_date,
                         metadata_release_date: movie.metadata?.release_date,
                         year_used: year
-                    });
+                    });*/
                     
                     if (year) {
                         if (!timelineData.has(year)) {
@@ -1223,10 +2053,25 @@
                 // Set pour suivre les saisons déjà traitées
                 const processedSeasons = new Set();
 
+                // Map globale pour le total des épisodes vus par saison (toutes années confondues)
+                const totalWatchedEpisodesBySeason = new Map();
+
+                // Initialiser la map pour toutes les saisons de toutes les séries
+                for (const [key, show] of contentDictionary.showDetails) {
+                    if (show.metadata?.seasons) {
+                        for (const season of show.metadata.seasons) {
+                            if (season.season_number !== 0) {
+                                const seasonKey = `${show.id}_${season.season_number}`;
+                                totalWatchedEpisodesBySeason.set(seasonKey, new Set());
+                            }
+                        }
+                    }
+                }
+
                 // Traiter les séries et épisodes
                 for (const [key, show] of contentDictionary.showDetails) {
                     if (!show.episodes) {
-                        console.warn(`Pas d'épisodes pour la série ${show.title}`);
+                        /*console.warn(`Pas d'épisodes pour la série ${show.title}`);*/
                         continue;
                     }
 
@@ -1239,10 +2084,10 @@
                         return episode;
                     }).filter(ep => ep !== null);
 
-                    // Créer une map des épisodes vus par saison
-                    const watchedEpisodesBySeason = new Map();
-                    const firstWatchedDateBySeason = new Map();
-                    const lastWatchedDateBySeason = new Map();
+                    // Créer une map des épisodes vus par saison et par année
+                    const watchedEpisodesBySeasonAndYear = new Map();
+                    const firstWatchedDateBySeasonAndYear = new Map();
+                    const lastWatchedDateBySeasonAndYear = new Map();
 
                     // Analyser les épisodes vus
                     for (const episode of episodes) {
@@ -1252,21 +2097,30 @@
                             if (seasonNumber === 0) continue;
 
                             const watchedDate = new Date(episode.watched_at);
+                            const watchedYear = watchedDate.getFullYear();
+                            const seasonYearKey = `${seasonNumber}_${watchedYear}`;
 
-                            // Mettre à jour les épisodes vus
-                            if (!watchedEpisodesBySeason.has(seasonNumber)) {
-                                watchedEpisodesBySeason.set(seasonNumber, new Set());
+                            // Mettre à jour les épisodes vus par saison et année
+                            if (!watchedEpisodesBySeasonAndYear.has(seasonYearKey)) {
+                                watchedEpisodesBySeasonAndYear.set(seasonYearKey, new Set());
                             }
-                            watchedEpisodesBySeason.get(seasonNumber).add(episode.episode_number);
+                            watchedEpisodesBySeasonAndYear.get(seasonYearKey).add(episode.episode_number);
 
-                            // Mettre à jour les dates de visionnage
-                            if (!firstWatchedDateBySeason.has(seasonNumber) || 
-                                watchedDate < firstWatchedDateBySeason.get(seasonNumber)) {
-                                firstWatchedDateBySeason.set(seasonNumber, watchedDate);
+                            // Mettre à jour le total des épisodes vus par saison (toutes années confondues)
+                            const seasonKey = `${show.id}_${seasonNumber}`;
+                            if (!totalWatchedEpisodesBySeason.has(seasonKey)) {
+                                totalWatchedEpisodesBySeason.set(seasonKey, new Set());
                             }
-                            if (!lastWatchedDateBySeason.has(seasonNumber) || 
-                                watchedDate > lastWatchedDateBySeason.get(seasonNumber)) {
-                                lastWatchedDateBySeason.set(seasonNumber, watchedDate);
+                            totalWatchedEpisodesBySeason.get(seasonKey).add(episode.episode_number);
+
+                            // Mettre à jour les dates de visionnage par saison et année
+                            if (!firstWatchedDateBySeasonAndYear.has(seasonYearKey) || 
+                                watchedDate < firstWatchedDateBySeasonAndYear.get(seasonYearKey)) {
+                                firstWatchedDateBySeasonAndYear.set(seasonYearKey, watchedDate);
+                            }
+                            if (!lastWatchedDateBySeasonAndYear.has(seasonYearKey) || 
+                                watchedDate > lastWatchedDateBySeasonAndYear.get(seasonYearKey)) {
+                                lastWatchedDateBySeasonAndYear.set(seasonYearKey, watchedDate);
                             }
                         }
                     }
@@ -1274,13 +2128,14 @@
                     // Grouper les saisons par année
                     const seasonsByYear = new Map();
 
-                    // Traiter d'abord les saisons vues
-                    for (const [seasonNumber, watchedEpisodes] of watchedEpisodesBySeason) {
+                    // Traiter d'abord les saisons vues par année
+                    for (const [seasonYearKey, watchedEpisodes] of watchedEpisodesBySeasonAndYear) {
                         // Ignorer les saisons avec season_number = 0
+                        const [seasonNumber, year] = seasonYearKey.split('_').map(Number);
                         if (seasonNumber === 0) continue;
 
-                        const firstWatchedDate = firstWatchedDateBySeason.get(seasonNumber);
-                        const year = firstWatchedDate.getFullYear();
+                        const firstWatchedDate = firstWatchedDateBySeasonAndYear.get(seasonYearKey);
+                        const lastWatchedDate = lastWatchedDateBySeasonAndYear.get(seasonYearKey);
                         
                         if (!seasonsByYear.has(year)) {
                             seasonsByYear.set(year, new Map());
@@ -1289,7 +2144,11 @@
                         // Récupérer le nombre total d'épisodes depuis les métadonnées
                         const seasonMetadata = show.metadata?.seasons?.find(s => Number(s.season_number) === Number(seasonNumber));
                         const totalEpisodes = seasonMetadata?.episode_count || 0;
-                        const progress = totalEpisodes > 0 ? (watchedEpisodes.size / totalEpisodes) * 100 : 0;
+                        
+                        // Calculer la progression globale de la saison (toutes années confondues)
+                        const seasonKey = `${show.id}_${seasonNumber}`;
+                        const totalWatchedForSeason = totalWatchedEpisodesBySeason.get(seasonKey)?.size || 0;
+                        const progress = totalEpisodes > 0 ? (totalWatchedForSeason / totalEpisodes) * 100 : 0;
 
                         seasonsByYear.get(year).set(seasonNumber, {
                             show: show,
@@ -1297,12 +2156,14 @@
                             total_episodes: totalEpisodes,
                             progress: progress,
                             first_watched: firstWatchedDate,
-                            last_watched: lastWatchedDateBySeason.get(seasonNumber),
-                            is_watched: true
+                            last_watched: lastWatchedDate,
+                            is_watched: true,
+                            year: year,
+                            total_watched_for_season: totalWatchedForSeason
                         });
 
-                        // Marquer la saison comme traitée
-                        processedSeasons.add(`${show.id}_${seasonNumber}`);
+                        // Marquer la saison comme traitée pour cette année
+                        processedSeasons.add(`${show.id}_${seasonNumber}_${year}`);
                     }
 
                     // Traiter ensuite les saisons non vues
@@ -1317,24 +2178,38 @@
                                 const yearNum = airDate.getFullYear();
                                 const seasonNumber = season.season_number;
                                 
-                                // Ne pas ajouter si la saison a déjà été traitée (vue ou non vue)
+                                // Vérifier si la saison a été visionnée dans une autre année
                                 const seasonKey = `${show.id}_${seasonNumber}`;
-                                if (!processedSeasons.has(seasonKey)) {
+                                const totalWatchedForSeason = totalWatchedEpisodesBySeason.get(seasonKey)?.size || 0;
+                                
+                                // Ne pas ajouter la saison dans son année de sortie si elle a été visionnée ailleurs
+                                if (totalWatchedForSeason > 0) {
+                                    continue;
+                                }
+                                
+                                // Ne pas ajouter si la saison a déjà été traitée pour cette année (vue ou non vue)
+                                const seasonYearKey = `${show.id}_${seasonNumber}_${yearNum}`;
+                                if (!processedSeasons.has(seasonYearKey)) {
                                     if (!seasonsByYear.has(yearNum)) {
                                         seasonsByYear.set(yearNum, new Map());
                                     }
                                     
                                     // Ne pas ajouter si la saison existe déjà dans l'année
                                     if (!seasonsByYear.get(yearNum).has(seasonNumber)) {
+                                        // Calculer la progression globale même pour les saisons non vues
+                                        const progress = season.episode_count > 0 ? (totalWatchedForSeason / season.episode_count) * 100 : 0;
+                                        
                                         seasonsByYear.get(yearNum).set(seasonNumber, {
                                             show: show,
                                             episodes: [],
                                             total_episodes: season.episode_count || 0,
-                                            progress: 0,
+                                            progress: progress,
                                             air_date: airDate,
-                                            is_watched: false
+                                            is_watched: false,
+                                            year: yearNum,
+                                            total_watched_for_season: totalWatchedForSeason
                                         });
-                                        processedSeasons.add(seasonKey);
+                                        processedSeasons.add(seasonYearKey);
                                     }
                                 }
                             }
@@ -1355,7 +2230,7 @@
 
                 // Ajouter les séries de la watchlist qui n'ont pas encore été commencées
                 for (const [key, show] of contentDictionary.showDetails) {
-                    if (show.source === 'watchlist' && show.metadata?.seasons) {
+                    if (show.metadata?.seasons) {
                         for (const season of show.metadata.seasons) {
                             // Ignorer les saisons avec season_number = 0
                             if (season.season_number === 0) continue;
@@ -1366,9 +2241,18 @@
                                 const yearNum = airDate.getFullYear();
                                 const seasonNumber = season.season_number;
 
-                                // Vérifier si la saison n'est pas déjà dans la timeline
+                                // Vérifier si la saison a été visionnée dans une autre année
                                 const seasonKey = `${show.id}_${seasonNumber}`;
-                                if (!processedSeasons.has(seasonKey)) {
+                                const totalWatchedForSeason = totalWatchedEpisodesBySeason.get(seasonKey)?.size || 0;
+                                
+                                // Ne pas ajouter la saison dans son année de sortie si elle a été visionnée ailleurs
+                                if (totalWatchedForSeason > 0) {
+                                    continue;
+                                }
+
+                                // Vérifier si la saison n'est pas déjà dans la timeline pour cette année
+                                const seasonYearKey = `${show.id}_${seasonNumber}_${yearNum}`;
+                                if (!processedSeasons.has(seasonYearKey)) {
                                     if (!timelineData.has(yearNum)) {
                                         timelineData.set(yearNum, { movies: [], shows: new Map(), people: [] });
                                     }
@@ -1378,15 +2262,21 @@
                                             seasons: new Map()
                                         });
                                     }
+                                    
+                                    // Calculer la progression globale même pour les saisons de la watchlist
+                                    const progress = season.episode_count > 0 ? (totalWatchedForSeason / season.episode_count) * 100 : 0;
+                                    
                                     timelineData.get(yearNum).shows.get(show.id).seasons.set(seasonNumber, {
                                         show: show,
                                         episodes: [],
                                         total_episodes: season.episode_count || 0,
-                                        progress: 0,
+                                        progress: progress,
                                         air_date: airDate,
-                                        is_watched: false
+                                        is_watched: false,
+                                        year: yearNum,
+                                        total_watched_for_season: totalWatchedForSeason
                                     });
-                                    processedSeasons.add(seasonKey);
+                                    processedSeasons.add(seasonYearKey);
                                 }
                             }
                         }
@@ -1411,6 +2301,7 @@
                     const currentYear = new Date().getFullYear();
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
+                    today.setDate(today.getDate() + 1);
 
                     // Fonction pour trier les éléments par date
                     const sortByDate = (a, b) => {
@@ -1430,7 +2321,7 @@
                             } else {
                                 date = item.watched_at ? new Date(item.watched_at) : new Date(item.french_release_date || item.metadata?.release_date);
                             }
-                            if (date <= today) {
+                            if (date < today) {
                                 past.push(item);
                             } else {
                                 future.push(item);
@@ -1546,9 +2437,10 @@ ${seenInTheater ? 'Vu au cinéma !' : ''}">
                                                         <div class="poster-item ${!seasonData.is_watched ? 'not-started' : ''} ${seasonData.progress === 100 ? 'completed' : ''}" 
                                                              title="${show.metadata?.name || show.title} - Saison ${seasonNumber}
 ${seasonData.is_watched ? 
-`Épisodes vus: ${seasonData.episodes.length}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
-Premier épisode vu: ${seasonData.first_watched.toLocaleDateString()}
-Dernier épisode vu: ${seasonData.last_watched.toLocaleDateString()}` :
+`Épisodes vus en ${seasonData.year}: ${seasonData.episodes.length}
+Progression globale: ${seasonData.total_watched_for_season}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
+Premier épisode vu en ${seasonData.year}: ${seasonData.first_watched.toLocaleDateString()}
+Dernier épisode vu en ${seasonData.year}: ${seasonData.last_watched.toLocaleDateString()}` :
 `Sortie le: ${seasonData.air_date.toLocaleDateString()}
 ${seasonData.total_episodes} épisodes`}">
                                                             ${posterPath ? 
@@ -1575,9 +2467,10 @@ ${seasonData.total_episodes} épisodes`}">
                                                             <div class="poster-item future-item ${!seasonData.is_watched ? 'not-started' : ''} ${seasonData.progress === 100 ? 'completed' : ''}" 
                                                                  title="${show.metadata?.name || show.title} - Saison ${seasonNumber}
 ${seasonData.is_watched ? 
-`Épisodes vus: ${seasonData.episodes.length}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
-Premier épisode vu: ${seasonData.first_watched.toLocaleDateString()}
-Dernier épisode vu: ${seasonData.last_watched.toLocaleDateString()}` :
+`Épisodes vus en ${seasonData.year}: ${seasonData.episodes.length}
+Progression globale: ${seasonData.total_watched_for_season}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
+Premier épisode vu en ${seasonData.year}: ${seasonData.first_watched.toLocaleDateString()}
+Dernier épisode vu en ${seasonData.year}: ${seasonData.last_watched.toLocaleDateString()}` :
 `Sortie le: ${seasonData.air_date.toLocaleDateString()}
 ${seasonData.total_episodes} épisodes`}">
                                                                 ${posterPath ? 
@@ -1603,7 +2496,7 @@ ${seasonData.total_episodes} épisodes`}">
                                                         .sort(([a], [b]) => a - b)
                                                         .map(([seasonNumber, seasonData]) => {
                                                             const sortDate = seasonData.is_watched ? 
-                                                                seasonData.first_watched : 
+                                                                seasonData.last_watched : 
                                                                 seasonData.air_date;
                                                             return {
                                                                 show: showData.show,
@@ -1622,9 +2515,10 @@ ${seasonData.total_episodes} épisodes`}">
                                                         <div class="poster-item ${!seasonData.is_watched ? 'not-started' : ''} ${seasonData.progress === 100 ? 'completed' : ''}" 
                                                              title="${show.metadata?.name || show.title} - Saison ${seasonNumber}
 ${seasonData.is_watched ? 
-`Épisodes vus: ${seasonData.episodes.length}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
-Premier épisode vu: ${seasonData.first_watched.toLocaleDateString()}
-Dernier épisode vu: ${seasonData.last_watched.toLocaleDateString()}` :
+`Épisodes vus en ${seasonData.year}: ${seasonData.episodes.length}
+Progression globale: ${seasonData.total_watched_for_season}/${seasonData.total_episodes} (${Math.round(seasonData.progress)}%)
+Premier épisode vu en ${seasonData.year}: ${seasonData.first_watched.toLocaleDateString()}
+Dernier épisode vu en ${seasonData.year}: ${seasonData.last_watched.toLocaleDateString()}` :
 `Sortie le: ${seasonData.air_date.toLocaleDateString()}
 ${seasonData.total_episodes} épisodes`}">
                                                             ${posterPath ? 
@@ -1695,6 +2589,34 @@ ${person.deathDate ? `Décédé(e) le: ${new Date(person.deathDate).toLocaleDate
         // Charger les données au chargement de la page
         window.onload = loadData;
 
+        // Fonction pour nettoyer l'ancien cache et recharger
+        function cleanOldCacheAndReload() {
+            try {
+                const result = metadataCache.cleanOldCache();
+                const birthdayResult = clearBirthdayCache();
+                
+                let message = '';
+                if (result.cleanedCount > 0) {
+                    message += `Cache métadonnées: ${result.cleanedCount} entrées supprimées, ${(result.cleanedSize / 1024).toFixed(2)} KB libérés. `;
+                }
+                if (birthdayResult && birthdayResult.cleanedCount > 0) {
+                    message += `Cache anniversaires: ${birthdayResult.cleanedCount} entrées supprimées, ${(birthdayResult.cleanedSize / 1024).toFixed(2)} KB libérés. `;
+                }
+                
+                if (message) {
+                    alert('Nettoyage effectué: ' + message);
+                } else {
+                    alert('Aucun cache ancien à nettoyer.');
+                }
+                
+                // Recharger la page pour mettre à jour l'affichage
+                location.reload();
+            } catch (error) {
+                console.error('Erreur lors du nettoyage du cache:', error);
+                alert('Erreur lors du nettoyage du cache: ' + error.message);
+            }
+        }
+
         // Fonction pour forcer le rechargement des métadonnées
         async function forceRefreshMetadata() {
             try {
@@ -1712,9 +2634,9 @@ ${person.deathDate ? `Décédé(e) le: ${new Date(person.deathDate).toLocaleDate
                 }
 
                 // Vider le cache d'erreur pour permettre les nouveaux appels
-                Object.keys(sessionStorage).forEach(key => {
+                Object.keys(localStorage).forEach(key => {
                     if (key.startsWith(metadataCache.ERROR_PREFIX)) {
-                        sessionStorage.removeItem(key);
+                        localStorage.removeItem(key);
                     }
                 });
 

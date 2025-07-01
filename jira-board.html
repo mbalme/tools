@@ -2,14 +2,40 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vue d'ensemble du Board Jira</title>
     <style>
+        :root {
+            --primary-color: #0052CC;
+            --primary-hover: #0747A6;
+            --secondary-color: #6B778C;
+            --background-color: #f8fafc;
+            --surface-color: #ffffff;
+            --border-color: #DFE1E6;
+            --success-color: #36B37E;
+            --warning-color: #FF8B00;
+            --error-color: #FF5630;
+            --info-color: #0065FF;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+            --border-radius: 8px;
+            --border-radius-sm: 4px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f4f6f8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, var(--background-color) 0%, #eef2f7 100%);
             margin: 0;
-            padding: 2rem;
+            padding: 1.5rem;
             color: #172B4D;
+            line-height: 1.6;
+            min-height: 100vh;
         }
 
         .credentials-panel {
@@ -21,44 +47,71 @@
         }
 
         .credentials-panel {
-            background-color: #fff;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
             margin-bottom: 2rem;
             max-width: 600px;
+            border: 1px solid var(--border-color);
         }
 
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 600;
+            color: #172B4D;
+            font-size: 0.9rem;
         }
 
         .form-group input {
             width: 100%;
-            padding: 0.6rem;
-            border: 1px solid #DFE1E6;
-            border-radius: 4px;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
             font-size: 14px;
+            transition: var(--transition);
+            background: var(--surface-color);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
         }
 
         button {
-            background-color: #0052CC;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
             color: white;
             border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 4px;
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--border-radius-sm);
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
         }
 
         button:hover {
-            background-color: #0747A6;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .board-container {
@@ -66,50 +119,88 @@
         }
 
         .epic-section {
-            background: white;
-            border-radius: 8px;
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
             margin-bottom: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
             overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
         .epic-header {
-            background: #F4F5F7;
+            background: linear-gradient(135deg, #F4F5F7 0%, #E8EAED 100%);
             text-align: left;
             font-weight: 600;
-            min-width: 200px;
+            width: 180px;
+            min-width: 180px;
+            max-width: 180px;
             vertical-align: middle;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .epic-header::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border-color);
         }
 
         .epic-key {
-            font-weight: 600;
-            color: #0052CC;
-            margin-bottom: 0.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
         }
 
         .epic-name {
-            font-size: 0.9em;
-            color: #6B778C;
+            font-size: 0.75rem;
+            color: var(--secondary-color);
+            line-height: 1.2;
         }
 
         .sprint-section {
             margin: 1rem;
-            border: 1px solid #DFE1E6;
-            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            overflow: hidden;
         }
 
         .sprint-header {
-            background: #F4F5F7;
+            background: linear-gradient(135deg, #F4F5F7 0%, #E8EAED 100%);
             text-align: left;
             font-weight: 600;
-            min-width: 150px;
+            width: 140px;
+            min-width: 140px;
+            max-width: 140px;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
         }
 
-        /* Style pour les sprints fermés */
         .sprint-header.closed {
-            background: #F4F5F7;
-            color: #6B778C;
+            background: linear-gradient(135deg, #F4F5F7 0%, #E8EAED 100%);
+            color: var(--secondary-color);
             font-style: italic;
+            opacity: 0.8;
+        }
+
+        .sprint-header.active {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            color: #1976D2;
+            font-weight: 700;
+            border-left: 4px solid var(--success-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sprint-header.active::before {
+            content: '▶';
+            margin-right: 0.5rem;
+            color: var(--success-color);
+            font-size: 0.8rem;
         }
 
         .status-columns {
@@ -121,91 +212,148 @@
 
         .status-column {
             background: #F4F5F7;
-            border-radius: 4px;
+            border-radius: var(--border-radius-sm);
             padding: 0.8rem;
         }
 
         .status-header {
-            background: #F4F5F7;
+            background: linear-gradient(135deg, #F4F5F7 0%, #E8EAED 100%);
             text-align: center;
-            font-weight: 600;
+            font-weight: 700;
             min-width: 250px;
+            padding: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 0.95rem;
+            color: #172B4D;
+            position: relative;
+        }
+
+        .status-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: var(--primary-color);
+            border-radius: 1px;
         }
 
         .ticket {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            padding: 0.7em 1em 0.5em 1em;
-            margin-bottom: 0.7em;
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            margin-bottom: 0.75rem;
             display: flex;
             flex-direction: column;
             min-width: 0;
-            transition: box-shadow 0.2s;
-            border: 1px solid #e6e6e6;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ticket::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-color);
+            opacity: 0;
+            transition: var(--transition);
         }
 
         .ticket:hover {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.13);
-            border-color: #b3b3b3;
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .ticket:hover::before {
+            opacity: 1;
         }
 
         .ticket-top {
             display: flex;
             align-items: center;
             gap: 0.5em;
-            margin-bottom: 0.2em;
+            margin-bottom: 0.5em;
         }
 
         .ticket-icon {
             width: 18px;
             height: 18px;
             flex-shrink: 0;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
         }
 
         .ticket-key {
-            font-weight: 600;
-            color: #0052CC;
+            font-weight: 700;
+            color: var(--primary-color);
             text-decoration: none;
             margin-right: 0.5em;
-            font-size: 1em;
+            font-size: 0.9rem;
+            transition: var(--transition);
         }
 
         .ticket-key:hover {
             text-decoration: underline;
+            color: var(--primary-hover);
         }
 
         .ticket-summary {
-            color: #222;
-            font-size: 0.98em;
+            color: #172B4D;
+            font-size: 0.95rem;
             font-weight: 500;
             text-decoration: none;
-            margin-bottom: 0.2em;
-            margin-left: 1.8em; /* pour aligner sous la clé */
+            margin-bottom: 0.5em;
+            margin-left: 1.8em;
             display: block;
-            line-height: 1.3;
+            line-height: 1.4;
+            transition: var(--transition);
         }
 
         .ticket-summary:hover {
             text-decoration: underline;
+            color: var(--primary-color);
         }
 
         .ticket-time {
-            font-size: 0.85em;
-            color: #6B778C;
+            font-size: 0.8rem;
+            color: var(--secondary-color);
             margin-left: 1.8em;
-            margin-bottom: 0.3em;
+            margin-bottom: 0.5em;
+            display: flex;
+            align-items: center;
+            gap: 0.3em;
+        }
+
+        .ticket-time::before {
+            content: '🕒';
+            font-size: 0.7rem;
         }
 
         .ticket-assignee {
             display: flex;
             align-items: center;
-            gap: 0.4em;
-            font-size: 0.92em;
-            color: #888;
-            margin-top: 0.3em;
+            gap: 0.5em;
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+            margin-top: 0.5em;
             margin-left: auto;
             justify-content: flex-end;
+            padding: 0.3em 0.6em;
+            background: rgba(107, 119, 140, 0.1);
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .ticket-assignee:hover {
+            background: rgba(107, 119, 140, 0.15);
         }
 
         .assignee-avatar {
@@ -213,46 +361,90 @@
             height: 20px;
             border-radius: 50%;
             flex-shrink: 0;
+            border: 2px solid var(--surface-color);
+            box-shadow: var(--shadow-sm);
         }
 
         .loading {
             text-align: center;
-            padding: 2rem;
-            font-size: 1.2rem;
-            color: #6B778C;
+            padding: 3rem;
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .loading::before {
+            content: '';
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .error {
-            background: #FFEBE6;
-            color: #DE350B;
-            padding: 1rem;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #FFEBE6 0%, #FFE8E6 100%);
+            color: var(--error-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
             margin: 1rem 0;
+            border: 1px solid #FFB3B3;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .error::before {
+            content: '⚠️';
+            font-size: 1.2rem;
         }
 
         .board-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             margin-top: 1rem;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: var(--surface-color);
+            box-shadow: var(--shadow-lg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
         .board-table th,
         .board-table td {
-            border: 1px solid #DFE1E6;
+            border: 1px solid var(--border-color);
             padding: 1rem;
             vertical-align: top;
         }
 
         .corner-cell {
-            background: #F4F5F7;
-            min-width: 200px;
+            background: linear-gradient(135deg, #F4F5F7 0%, #E8EAED 100%);
+            width: 180px;
+            min-width: 180px;
+            max-width: 180px;
+            border-right: 2px solid var(--border-color);
         }
 
         .ticket-cell {
             min-width: 250px;
             max-width: 300px;
+            background: var(--surface-color);
+            transition: var(--transition);
+        }
+
+        .ticket-cell:hover {
+            background: rgba(0, 82, 204, 0.02);
         }
 
         .ticket:last-child {
@@ -263,34 +455,43 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.4rem;
         }
 
         .epic-icon {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
         }
 
         .epic-info {
             display: flex;
             flex-direction: column;
+            gap: 0.2rem;
         }
 
         .epic-key, .epic-name {
-            color: #0052CC;
+            color: var(--primary-color);
             text-decoration: none;
+            transition: var(--transition);
+            font-size: 0.8rem;
+            line-height: 1.2;
         }
 
         .epic-key:hover, .epic-name:hover {
             text-decoration: underline;
+            color: var(--primary-hover);
         }
 
         .ticket-key, .ticket-summary {
-            color: #0052CC;
+            color: var(--primary-color);
             text-decoration: none;
+            transition: var(--transition);
         }
 
         .ticket-key:hover, .ticket-summary:hover {
             text-decoration: underline;
+            color: var(--primary-hover);
         }
 
         .priority-icon {
@@ -298,34 +499,418 @@
             height: 16px;
             margin-left: 0.2em;
             flex-shrink: 0;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
         }
 
         .cell-summary {
-            background: #F4F5F7;
-            padding: 0.5em;
-            margin-bottom: 0.8em;
-            border-radius: 4px;
-            font-size: 0.9em;
+            background: linear-gradient(135deg, #F4F5F7 0%, #E8EAED 100%);
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.9rem;
             color: #172B4D;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
         }
 
         .cell-summary-total {
-            font-weight: 600;
-            margin-bottom: 0.3em;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #172B4D;
+            font-size: 1rem;
         }
 
         .cell-summary-priorities {
             display: flex;
-            gap: 0.8em;
+            gap: 1rem;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .priority-count {
             display: flex;
             align-items: center;
+            gap: 0.4em;
+            padding: 0.3em 0.6em;
+            background: var(--surface-color);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .priority-count:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .story-points {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            color: #1976D2;
+            padding: 0.3em 0.6em;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 0.5em;
+            border: 1px solid #BBDEFB;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .story-points-summary {
+            background: linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%);
+            color: #2E7D32;
+            padding: 0.3em 0.6em;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid #C8E6C9;
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
             gap: 0.3em;
+            margin-right: 0.5rem;
+        }
+
+        .story-points-summary::before {
+            content: '📊';
+            font-size: 0.7rem;
+        }
+
+        .ticket-story-points {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            color: #1976D2;
+            padding: 0.3em 0.5em;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-left: auto;
+            margin-right: 0.5em;
+            border: 1px solid #BBDEFB;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Animations d'entrée */
+        .ticket {
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .board-table {
+                font-size: 0.9rem;
+            }
+            
+            .ticket-cell {
+                min-width: 200px;
+            }
+            
+            .epic-header {
+                width: 140px;
+                min-width: 140px;
+                max-width: 140px;
+            }
+            
+            .sprint-header {
+                width: 120px;
+                min-width: 120px;
+                max-width: 120px;
+                font-size: 0.8rem;
+            }
+            
+            .corner-cell {
+                width: 140px;
+                min-width: 140px;
+                max-width: 140px;
+            }
+        }
+
+        /* Amélioration de l'accessibilité */
+        .ticket:focus-within {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        /* États de chargement pour les images */
+        .ticket-icon, .epic-icon, .priority-icon, .assignee-avatar {
+            opacity: 0;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Tooltip pour les story points */
+        .story-points, .story-points-summary, .ticket-story-points {
+            position: relative;
+            cursor: help;
+        }
+
+        .story-points::after,
+        .story-points-summary::after,
+        .ticket-story-points::after {
+            content: 'Story Points';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 0.3em 0.6em;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .story-points:hover::after,
+        .story-points-summary:hover::after,
+        .ticket-story-points:hover::after {
+            opacity: 1;
+        }
+
+        /* Styles pour les sous-tâches */
+        .ticket.subtask {
+            margin-left: 1.5rem;
+            border-left: 3px solid var(--primary-color);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            opacity: 0.9;
+        }
+
+        .ticket.subtask::before {
+            content: '';
+            position: absolute;
+            left: -3px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary-color);
+            opacity: 1;
+        }
+
+        .ticket.subtask:hover {
+            opacity: 1;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        .parent-ticket {
+            border-left: 4px solid var(--success-color);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        }
+
+        .parent-ticket::before {
+            background: var(--success-color);
+            opacity: 1;
+        }
+
+        .subtask-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        /* Conteneur des sous-tâches */
+        .subtasks-container {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0, 82, 204, 0.02);
+            border-radius: var(--border-radius-sm);
+            padding: 0.75rem;
+        }
+
+        .subtasks-container .subtask {
+            margin-bottom: 0.5rem;
+            padding: 0.75rem;
+            background: var(--surface-color);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .subtasks-container .subtask:last-child {
+            margin-bottom: 0;
+        }
+
+        .subtasks-container .subtask .ticket-summary {
+            margin-left: 1.5rem;
+        }
+
+        .subtasks-container .subtask .ticket-time {
+            margin-left: 1.5rem;
+        }
+
+        .subtasks-container .subtask .ticket-assignee {
+            margin-left: 1.5rem;
+        }
+
+        /* Styles pour le filtre */
+        .filter-active {
+            background: linear-gradient(135deg, var(--success-color) 0%, #2E7D32 100%) !important;
+        }
+
+        .filter-inactive {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #5A6C7D 100%) !important;
+        }
+
+        .row-hidden {
+            display: none !important;
+        }
+
+        .row-visible {
+            display: table-row !important;
+        }
+
+        /* Animation pour le changement de filtre */
+        .board-table tbody tr {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .board-table tbody tr.row-hidden {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .board-table tbody tr.row-visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Indicateur visuel pour les lignes filtrées */
+        .sprint-header.closed.filtered {
+            opacity: 0.4;
+            background: linear-gradient(135deg, #F4F5F7 0%, #E8EAED 100%);
+            position: relative;
+        }
+
+        .sprint-header.closed.filtered::after {
+            content: '🔒';
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+
+        /* Styles pour les tickets récemment modifiés */
+        .ticket.recently-modified {
+            border: 2px solid var(--warning-color);
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+            box-shadow: 0 4px 12px rgba(255, 139, 0, 0.15);
+            position: relative;
+        }
+
+        .ticket.recently-modified::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--warning-color);
+            opacity: 1;
+        }
+
+        .ticket.recently-modified::after {
+            content: '🔄';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            font-size: 0.8rem;
+            background: var(--warning-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ticket.recently-modified:hover {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+            border-color: #F57C00;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(255, 139, 0, 0.2);
+        }
+
+        .ticket.recently-modified .ticket-time {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .ticket.recently-modified .ticket-time::before {
+            content: '🔄';
+            font-size: 0.7rem;
+        }
+
+        /* Animation pour les tickets récemment modifiés */
+        .ticket.recently-modified {
+            animation: recentlyModifiedPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes recentlyModifiedPulse {
+            0%, 100% {
+                box-shadow: 0 4px 12px rgba(255, 139, 0, 0.15);
+            }
+            50% {
+                box-shadow: 0 4px 12px rgba(255, 139, 0, 0.25);
+            }
+        }
+
+        /* Sous-tâches récemment modifiées */
+        .ticket.subtask.recently-modified {
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+            border-left: 3px solid var(--warning-color);
+        }
+
+        .ticket.subtask.recently-modified::before {
+            background: var(--warning-color);
+            opacity: 1;
+        }
+
+        /* Indicateur de modification récente dans le résumé de cellule */
+        .cell-summary.recently-modified {
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+            border: 1px solid var(--warning-color);
+            position: relative;
+        }
+
+        .cell-summary.recently-modified::after {
+            content: '🔄';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            font-size: 0.7rem;
+            color: var(--warning-color);
         }
     </style>
+    <script src="js/config.js"></script>
 </head>
 <body>
     <div class="credentials-panel">
@@ -333,23 +918,187 @@
             <label for="boardId">ID du Board :</label>
             <input type="text" id="boardId" placeholder="ID du board" value="36478">
         </div>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
         <button id="fetchBtn">Charger le board</button>
+        <button id="filterBtn" style="background: linear-gradient(135deg, var(--secondary-color) 0%, #5A6C7D 100%); opacity: 0.6; cursor: not-allowed;">
+            <span id="filterIcon">👁️</span>
+            <span id="filterText">Afficher tout</span>
+        </button>
+        <div id="recentlyModifiedIndicator" style="display: none; background: linear-gradient(135deg, var(--warning-color) 0%, #F57C00 100%); color: white; padding: 0.5rem 1rem; border-radius: var(--border-radius-sm); font-weight: 600; font-size: 0.9rem; box-shadow: var(--shadow-sm); cursor: pointer; transition: var(--transition);" title="Cliquer pour filtrer les tickets récemment modifiés">
+            <span>🔄</span>
+            <span id="recentlyModifiedCount">0</span> ticket(s) modifié(s) récemment
+        </div>
     </div>
 
     <div id="boardContainer" class="board-container"></div>
 
     <script>
+        // Variables globales pour la gestion d'état
+        let isLoading = false;
+        let currentBoardId = null;
+        let isFilterActive = false;
+        let isRecentlyModifiedFilterActive = false;
+        let currentTable = null;
+        let currentData = null; // Stocker les données actuelles pour le re-rendu
+
+        // Fonction utilitaire pour les animations
+        function animateElement(element, animation, duration = 300) {
+            element.style.animation = `${animation} ${duration}ms ease-out`;
+            setTimeout(() => {
+                element.style.animation = '';
+            }, duration);
+        }
+
+        // Fonction pour afficher les notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            
+            // Styles pour les notifications
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: var(--border-radius);
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                transform: translateX(100%);
+                transition: var(--transition);
+                box-shadow: var(--shadow-lg);
+                max-width: 300px;
+            `;
+
+            // Couleurs selon le type
+            const colors = {
+                success: 'linear-gradient(135deg, var(--success-color) 0%, #2E7D32 100%)',
+                error: 'linear-gradient(135deg, var(--error-color) 0%, #D32F2F 100%)',
+                warning: 'linear-gradient(135deg, var(--warning-color) 0%, #F57C00 100%)',
+                info: 'linear-gradient(135deg, var(--info-color) 0%, #1976D2 100%)'
+            };
+            
+            notification.style.background = colors[type] || colors.info;
+            
+            document.body.appendChild(notification);
+            
+            // Animation d'entrée
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto-suppression
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 4000);
+        }
+
+        // Fonction pour gérer l'état de chargement
+        function setLoadingState(loading) {
+            isLoading = loading;
+            const button = document.getElementById('fetchBtn');
+            
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="loading-spinner"></span> Chargement...';
+                button.style.opacity = '0.7';
+            } else {
+                button.disabled = false;
+                button.innerHTML = 'Charger le board';
+                button.style.opacity = '1';
+            }
+        }
+
+        // Fonction pour améliorer l'expérience de chargement
+        function showProgressiveLoading(container, totalItems) {
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="loading-text">Préparation de l'affichage...</div>
+                    </div>
+                </div>
+            `;
+            
+            // Styles pour la barre de progression
+            const progressBar = container.querySelector('.progress-bar');
+            const progressFill = container.querySelector('.progress-fill');
+            
+            progressBar.style.cssText = `
+                width: 100%;
+                height: 8px;
+                background: var(--border-color);
+                border-radius: 4px;
+                overflow: hidden;
+                margin: 1rem 0;
+            `;
+            
+            progressFill.style.cssText = `
+                height: 100%;
+                background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+                width: 0%;
+                transition: width 0.3s ease;
+                border-radius: 4px;
+            `;
+            
+            // Animation de la barre de progression
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = `${progress}%`;
+                
+                if (progress >= 90) {
+                    clearInterval(interval);
+                }
+            }, 200);
+            
+            return () => {
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+                // Ne pas vider le container ici, juste masquer l'écran de chargement
+                const loadingElement = container.querySelector('.loading');
+                if (loadingElement) {
+                    loadingElement.style.opacity = '0';
+                    loadingElement.style.transform = 'translateY(-20px)';
+                    setTimeout(() => {
+                        if (loadingElement.parentNode) {
+                            loadingElement.parentNode.removeChild(loadingElement);
+                        }
+                    }, 300);
+                }
+            };
+        }
+
         async function fetchJiraData(boardId) {
             try {
-                const response = await fetch(`https://chouch.azurewebsites.net/Jira/json?boardId=${boardId}`);
+                setLoadingState(true);
+                showNotification('Récupération des données Jira...', 'info');
                 
-                if (!response.ok) throw new Error('Erreur lors de la récupération des données');
+                const response = await fetch(wsConfig.buildUrlString(`Jira/json?boardId=${boardId}`));
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 console.log('Données reçues:', data);
+                
+                showNotification(`${data.issues?.length || 0} tickets récupérés avec succès`, 'success');
                 return data;
             } catch (error) {
                 console.error('Erreur:', error);
+                showNotification(`Erreur: ${error.message}`, 'error');
                 throw error;
+            } finally {
+                setLoadingState(false);
             }
         }
 
@@ -368,21 +1117,321 @@
                 return statusToCategory;
             } catch (error) {
                 console.error('Erreur:', error);
+                showNotification('Impossible de récupérer les catégories de statuts', 'warning');
                 return {};
             }
         }
 
-        async function renderBoard(data) {
+        // Fonction pour créer un ticket avec animations
+        function createTicketElement(issue, index, subtasks = []) {
+            const ticket = document.createElement('div');
+            ticket.className = 'ticket';
+            
+            // Ajouter la classe parent si c'est un parent avec des sous-tâches
+            if (subtasks.length > 0) {
+                ticket.classList.add('parent-ticket');
+            }
+            
+            // Vérifier si le ticket a été modifié récemment
+            if (isRecentlyModified(issue)) {
+                ticket.classList.add('recently-modified');
+            }
+            
+            ticket.style.animationDelay = `${index * 50}ms`;
+            
+            const ticketTop = document.createElement('div');
+            ticketTop.className = 'ticket-top';
+            
+            const ticketIcon = document.createElement('img');
+            ticketIcon.className = 'ticket-icon';
+            ticketIcon.src = issue.fields.issuetype.iconUrl;
+            ticketIcon.alt = issue.fields.issuetype.name;
+            ticketIcon.onload = () => {
+                ticketIcon.style.opacity = '1';
+            };
+
+            // Logo de priorité
+            const priorityIcon = document.createElement('img');
+            priorityIcon.className = 'priority-icon';
+            priorityIcon.src = issue.fields.priority?.iconUrl || '';
+            priorityIcon.alt = issue.fields.priority?.name || '';
+            priorityIcon.onload = () => {
+                priorityIcon.style.opacity = '1';
+            };
+
+            const ticketKey = document.createElement('a');
+            ticketKey.className = 'ticket-key';
+            ticketKey.href = getJiraIssueUrl(issue);
+            ticketKey.target = '_blank';
+            ticketKey.textContent = issue.key;
+            
+            // Ajouter un effet de clic
+            ticketKey.addEventListener('click', (e) => {
+                animateElement(ticketKey, 'pulse 0.3s ease');
+            });
+            
+            ticketTop.appendChild(ticketIcon);
+            if (issue.fields.priority?.iconUrl) ticketTop.appendChild(priorityIcon);
+            ticketTop.appendChild(ticketKey);
+            
+            // Ajouter les story points si disponibles
+            if (issue.fields.customfield_10006) {
+                const storyPoints = document.createElement('span');
+                storyPoints.className = 'ticket-story-points';
+                storyPoints.textContent = `${issue.fields.customfield_10006}`;
+                ticketTop.appendChild(storyPoints);
+            }
+            
+            const ticketSummary = document.createElement('a');
+            ticketSummary.className = 'ticket-summary';
+            ticketSummary.href = getJiraIssueUrl(issue);
+            ticketSummary.target = '_blank';
+            ticketSummary.textContent = issue.fields.summary;
+            
+            const ticketTime = document.createElement('div');
+            ticketTime.className = 'ticket-time';
+            ticketTime.textContent = formatTimeAgo(issue.fields.updated);
+            
+            const ticketAssignee = document.createElement('div');
+            ticketAssignee.className = 'ticket-assignee';
+            
+            if (issue.fields.assignee) {
+                const assigneeAvatar = document.createElement('img');
+                assigneeAvatar.className = 'assignee-avatar';
+                assigneeAvatar.src = issue.fields.assignee.avatarUrls['24x24'];
+                assigneeAvatar.alt = issue.fields.assignee.displayName;
+                assigneeAvatar.onload = () => {
+                    assigneeAvatar.style.opacity = '1';
+                };
+                
+                const assigneeName = document.createElement('span');
+                assigneeName.textContent = issue.fields.assignee.displayName;
+                
+                ticketAssignee.appendChild(assigneeAvatar);
+                ticketAssignee.appendChild(assigneeName);
+            } else {
+                ticketAssignee.textContent = 'Non assigné';
+                ticketAssignee.style.opacity = '0.6';
+            }
+            
+            // Ajouter des interactions au survol
+            ticket.addEventListener('mouseenter', () => {
+                ticket.style.transform = 'translateY(-2px) scale(1.02)';
+            });
+            
+            ticket.addEventListener('mouseleave', () => {
+                ticket.style.transform = 'translateY(0) scale(1)';
+            });
+            
+            ticket.appendChild(ticketTop);
+            ticket.appendChild(ticketSummary);
+            ticket.appendChild(ticketTime);
+            ticket.appendChild(ticketAssignee);
+            
+            // Ajouter les sous-tâches si il y en a
+            if (subtasks.length > 0) {
+                const subtasksContainer = document.createElement('div');
+                subtasksContainer.className = 'subtasks-container';
+                
+                subtasks.forEach((subtask, subtaskIndex) => {
+                    const subtaskElement = createSubtaskElement(subtask, subtaskIndex);
+                    subtasksContainer.appendChild(subtaskElement);
+                });
+                
+                ticket.appendChild(subtasksContainer);
+            }
+            
+            return ticket;
+        }
+
+        // Fonction pour créer un élément de sous-tâche
+        function createSubtaskElement(subtask, index) {
+            const subtaskElement = document.createElement('div');
+            subtaskElement.className = 'subtask';
+            
+            // Vérifier si la sous-tâche a été modifiée récemment
+            if (isRecentlyModified(subtask)) {
+                subtaskElement.classList.add('recently-modified');
+            }
+            
+            const subtaskTop = document.createElement('div');
+            subtaskTop.className = 'ticket-top';
+            
+            // Indicateur de sous-tâche
+            const subtaskIndicator = document.createElement('span');
+            subtaskIndicator.className = 'subtask-indicator';
+            subtaskTop.appendChild(subtaskIndicator);
+            
+            const subtaskIcon = document.createElement('img');
+            subtaskIcon.className = 'ticket-icon';
+            subtaskIcon.src = subtask.fields.issuetype.iconUrl;
+            subtaskIcon.alt = subtask.fields.issuetype.name;
+            subtaskIcon.onload = () => {
+                subtaskIcon.style.opacity = '1';
+            };
+
+            const subtaskKey = document.createElement('a');
+            subtaskKey.className = 'ticket-key';
+            subtaskKey.href = getJiraIssueUrl(subtask);
+            subtaskKey.target = '_blank';
+            subtaskKey.textContent = subtask.key;
+            
+            const subtaskSummary = document.createElement('a');
+            subtaskSummary.className = 'ticket-summary';
+            subtaskSummary.href = getJiraIssueUrl(subtask);
+            subtaskSummary.target = '_blank';
+            subtaskSummary.textContent = subtask.fields.summary;
+            
+            const subtaskTime = document.createElement('div');
+            subtaskTime.className = 'ticket-time';
+            subtaskTime.textContent = formatTimeAgo(subtask.fields.updated);
+            
+            const subtaskAssignee = document.createElement('div');
+            subtaskAssignee.className = 'ticket-assignee';
+            
+            if (subtask.fields.assignee) {
+                const assigneeAvatar = document.createElement('img');
+                assigneeAvatar.className = 'assignee-avatar';
+                assigneeAvatar.src = subtask.fields.assignee.avatarUrls['24x24'];
+                assigneeAvatar.alt = subtask.fields.assignee.displayName;
+                assigneeAvatar.onload = () => {
+                    assigneeAvatar.style.opacity = '1';
+                };
+                
+                const assigneeName = document.createElement('span');
+                assigneeName.textContent = subtask.fields.assignee.displayName;
+                
+                subtaskAssignee.appendChild(assigneeAvatar);
+                subtaskAssignee.appendChild(assigneeName);
+            } else {
+                subtaskAssignee.textContent = 'Non assigné';
+                subtaskAssignee.style.opacity = '0.6';
+            }
+            
+            subtaskTop.appendChild(subtaskIcon);
+            subtaskTop.appendChild(subtaskKey);
+            
+            // Ajouter les story points si disponibles
+            if (subtask.fields.customfield_10006) {
+                const storyPoints = document.createElement('span');
+                storyPoints.className = 'ticket-story-points';
+                storyPoints.textContent = `${subtask.fields.customfield_10006}`;
+                subtaskTop.appendChild(storyPoints);
+            }
+            
+            subtaskElement.appendChild(subtaskTop);
+            subtaskElement.appendChild(subtaskSummary);
+            subtaskElement.appendChild(subtaskTime);
+            subtaskElement.appendChild(subtaskAssignee);
+            
+            return subtaskElement;
+        }
+
+        // Fonction pour organiser les tickets par parent/enfant
+        function organizeTicketsByParent(issues) {
+            const parentTickets = [];
+            const subtasks = [];
+            const parentToSubtasks = {};
+            
+            // Séparer les tickets parents et les sous-tâches
+            issues.forEach(issue => {
+                if (issue.fields.issuetype.subtask) {
+                    subtasks.push(issue);
+                    const parentKey = issue.fields.parent?.key;
+                    if (parentKey) {
+                        if (!parentToSubtasks[parentKey]) {
+                            parentToSubtasks[parentKey] = [];
+                        }
+                        parentToSubtasks[parentKey].push(issue);
+                    }
+                } else {
+                    parentTickets.push(issue);
+                }
+            });
+            
+            // Organiser les tickets avec leurs sous-tâches
+            const organizedTickets = [];
+            
+            parentTickets.forEach(parent => {
+                organizedTickets.push({
+                    ticket: parent,
+                    isParent: true,
+                    subtasks: parentToSubtasks[parent.key] || []
+                });
+                
+                // Ajouter les sous-tâches après leur parent
+                if (parentToSubtasks[parent.key]) {
+                    parentToSubtasks[parent.key].forEach(subtask => {
+                        organizedTickets.push({
+                            ticket: subtask,
+                            isParent: false,
+                            subtasks: []
+                        });
+                    });
+                }
+            });
+            
+            // Ajouter les sous-tâches orphelines (sans parent trouvé)
+            const orphanedSubtasks = subtasks.filter(subtask => {
+                const parentKey = subtask.fields.parent?.key;
+                return !parentKey || !parentToSubtasks[parentKey];
+            });
+            
+            orphanedSubtasks.forEach(subtask => {
+                organizedTickets.push({
+                    ticket: subtask,
+                    isParent: false,
+                    subtasks: []
+                });
+            });
+            
+            return organizedTickets;
+        }
+
+        async function renderBoard(data, isReRender = false) {
             const container = document.getElementById('boardContainer');
-            container.innerHTML = '';
+            
+            // Si c'est un re-rendu, ne pas vider le container immédiatement
+            if (!isReRender) {
+                container.innerHTML = '';
+            }
 
             if (!data || !data.issues) {
                 container.innerHTML = '<div class="error">Format de données invalide</div>';
                 return;
             }
 
+            // Stocker les données pour le re-rendu
+            currentData = data;
+
+            // Afficher le chargement progressif seulement si ce n'est pas un re-rendu
+            let finishLoading = null;
+            if (!isReRender) {
+                finishLoading = showProgressiveLoading(container, data.issues.length);
+            }
+
             // Récupérer les catégories de statuts
             const statusToCategory = await fetchStatusCategories();
+
+            // Séparer les sous-tâches et créer un mapping parent->sous-tâches
+            const subtasks = [];
+            const parentToSubtasks = {};
+            
+            data.issues.forEach(issue => {
+                if (issue.fields.issuetype.subtask) {
+                    subtasks.push(issue);
+                    const parentKey = issue.fields.parent?.key;
+                    if (parentKey) {
+                        if (!parentToSubtasks[parentKey]) {
+                            parentToSubtasks[parentKey] = [];
+                        }
+                        parentToSubtasks[parentKey].push(issue);
+                    }
+                }
+            });
+
+            console.log('Sous-tâches trouvées:', subtasks.length);
+            console.log('Mapping parent->sous-tâches:', Object.keys(parentToSubtasks).length, 'parents');
 
             // Créer la table principale
             const table = document.createElement('table');
@@ -428,17 +1477,32 @@
                 // Vérifier d'abord le sprint actif
                 let sprintId = issue.fields.sprint?.id || null;
                 let sprintName = issue.fields.sprint?.name || null;
+                let isActiveSprint = false;
                 
                 // Si pas de sprint actif, chercher dans les sprints fermés
                 if (!sprintId && issue.fields.closedSprints && issue.fields.closedSprints.length > 0) {
                     const lastClosedSprint = issue.fields.closedSprints[issue.fields.closedSprints.length - 1];
                     sprintId = lastClosedSprint.id;
                     sprintName = `${lastClosedSprint.name} (Fermé)`;
+                    isActiveSprint = false;
+                } else if (sprintId) {
+                    isActiveSprint = issue.fields.sprint?.state === 'active';
                 }
                 
                 if (!sprintId) {
                     sprintId = 'Sans Sprint';
                     sprintName = 'Sans Sprint';
+                    isActiveSprint = false;
+                }
+                
+                // Appliquer le filtre de sprint si actif
+                if (isFilterActive && !isActiveSprint) {
+                    return; // Ignorer les sprints non actifs si le filtre est activé
+                }
+                
+                // Appliquer le filtre des tickets récemment modifiés si actif
+                if (isRecentlyModifiedFilterActive && !isRecentlyModified(issue)) {
+                    return; // Ignorer les tickets non récemment modifiés si le filtre est activé
                 }
                 
                 if (!issuesByEpic[epicKey]) {
@@ -451,6 +1515,7 @@
                 if (!issuesByEpic[epicKey].sprints[sprintId]) {
                     issuesByEpic[epicKey].sprints[sprintId] = {
                         sprintName,
+                        isActive: isActiveSprint,
                         issues: []
                     };
                 }
@@ -466,6 +1531,9 @@
                     const row = document.createElement('tr');
                     const sprintData = epicData.sprints[sprintId];
                     
+                    // Organiser les tickets par parent/enfant au niveau du sprint
+                    const organizedSprintTickets = organizeTicketsByParent(sprintData.issues);
+                    
                     // Cellule d'epic (fusionnée si premier sprint)
                     if (sprintIndex === 0) {
                         const epicCell = document.createElement('th');
@@ -476,11 +1544,17 @@
                         const epicIssue = data.issues.find(issue => 
                             issue.fields.epic?.key === epicKey
                         );
-                        epicIssue.fields.epic.iconUrl = "https://portail.agir.orange.com/images/icons/issuetypes/epic.svg";
+                        
+                        // URL de l'icône par défaut pour les epics
+                        const defaultEpicIconUrl = "https://portail.agir.orange.com/images/icons/issuetypes/epic.svg";
+                        
+                        // Utiliser l'icône de l'epic si trouvée, sinon l'icône par défaut
+                        const epicIconUrl = epicIssue?.fields?.epic?.iconUrl || defaultEpicIconUrl;
+                        
                         const epicUrl = getJiraEpicUrl(epicKey);
                         epicCell.innerHTML = `
                             <div class="epic-header-content">
-                                <img class="epic-icon" src="${epicIssue?.fields.epic?.iconUrl || ''}" alt="Epic icon">
+                                <img class="epic-icon" src="${epicIconUrl}" alt="Epic icon">
                                 <div class="epic-info">
                                     <a href="${epicUrl}" target="_blank" class="epic-key">${epicKey}</a>
                                     <a href="${epicUrl}" target="_blank" class="epic-name">${epicData.epicName}</a>
@@ -493,6 +1567,11 @@
                     // Cellule de sprint
                     const sprintCell = document.createElement('th');
                     sprintCell.className = 'sprint-header';
+                    if (sprintData.isActive) {
+                        sprintCell.classList.add('active');
+                    } else {
+                        sprintCell.classList.add('closed');
+                    }
                     sprintCell.textContent = sprintData.sprintName;
                     row.appendChild(sprintCell);
 
@@ -501,47 +1580,80 @@
                         const cell = document.createElement('td');
                         cell.className = 'ticket-cell';
                         
-                        const categoryIssues = sprintData.issues.filter(issue => 
-                            statusToCategory[issue.fields.status.name] === category
+                        // Trouver les tickets de cette catégorie
+                        const categoryTickets = organizedSprintTickets.filter(ticketData => 
+                            statusToCategory[ticketData.ticket.fields.status.name] === category
+                        );
+
+                        // Filtrer pour ne garder que les tickets parents (pas les sous-tâches)
+                        const parentTicketsInCategory = categoryTickets.filter(ticketData => 
+                            !ticketData.ticket.fields.issuetype.subtask
                         );
 
                         // Ajouter le résumé de la cellule
-                        if (categoryIssues.length > 0) {
-                            console.log('Cellule avec issues:', categoryIssues.length, 'tickets');
+                        if (parentTicketsInCategory.length > 0) {
                             const cellSummary = document.createElement('div');
                             cellSummary.className = 'cell-summary';
+                            
+                            // Vérifier s'il y a des tickets récemment modifiés dans cette cellule
+                            const hasRecentlyModifiedTickets = parentTicketsInCategory.some(ticketData => 
+                                isRecentlyModified(ticketData.ticket)
+                            );
+                            
+                            if (hasRecentlyModifiedTickets) {
+                                cellSummary.classList.add('recently-modified');
+                            }
 
                             const totalSummary = document.createElement('div');
                             totalSummary.className = 'cell-summary-total';
-                            totalSummary.textContent = `${categoryIssues.length} ticket${categoryIssues.length > 1 ? 's' : ''}`;
+                            totalSummary.textContent = `${parentTicketsInCategory.length} ticket${parentTicketsInCategory.length > 1 ? 's' : ''}`;
                             cellSummary.appendChild(totalSummary);
 
-                            // Grouper par priorité
+                            // Calculer les story points totaux (parents + sous-tâches)
+                            let totalStoryPoints = 0;
+                            parentTicketsInCategory.forEach(ticketData => {
+                                const issue = ticketData.ticket;
+                                // Story points du parent
+                                totalStoryPoints += (issue.fields.customfield_10006 || 0);
+                                // Story points des sous-tâches
+                                const subtasks = parentToSubtasks[issue.key] || [];
+                                subtasks.forEach(subtask => {
+                                    totalStoryPoints += (subtask.fields.customfield_10006 || 0);
+                                });
+                            });
+
+                            // Grouper par priorité (parents seulement)
                             const priorities = {};
-                            categoryIssues.forEach(issue => {
-                                const priority = issue.fields.priority;
+                            parentTicketsInCategory.forEach(ticketData => {
+                                const priority = ticketData.ticket.fields.priority;
                                 if (!priority) {
-                                    console.log('Issue sans priorité:', issue.key);
                                     return;
                                 }
                                 
                                 if (!priorities[priority.id]) {
                                     priorities[priority.id] = {
                                         count: 0,
+                                        storyPoints: 0,
                                         icon: priority.iconUrl,
                                         name: priority.name
                                     };
                                 }
                                 priorities[priority.id].count++;
+                                priorities[priority.id].storyPoints += (ticketData.ticket.fields.customfield_10006 || 0);
                             });
-
-                            console.log('Priorités trouvées:', priorities);
 
                             const prioritiesSummary = document.createElement('div');
                             prioritiesSummary.className = 'cell-summary-priorities';
                             
+                            // Ajouter les story points totaux sur la même ligne
+                            if (totalStoryPoints > 0) {
+                                const totalStoryPointsElement = document.createElement('div');
+                                totalStoryPointsElement.className = 'story-points-summary';
+                                totalStoryPointsElement.textContent = `${totalStoryPoints}`;
+                                prioritiesSummary.appendChild(totalStoryPointsElement);
+                            }
+                            
                             Object.values(priorities).forEach(priority => {
-                                console.log('Affichage priorité:', priority);
                                 const priorityCount = document.createElement('div');
                                 priorityCount.className = 'priority-count';
                                 
@@ -555,6 +1667,15 @@
                                 
                                 priorityCount.appendChild(priorityIcon);
                                 priorityCount.appendChild(count);
+                                
+                                // Ajouter les story points si disponibles
+                                if (priority.storyPoints > 0) {
+                                    const storyPoints = document.createElement('span');
+                                    storyPoints.className = 'story-points';
+                                    storyPoints.textContent = `${priority.storyPoints}`;
+                                    priorityCount.appendChild(storyPoints);
+                                }
+                                
                                 prioritiesSummary.appendChild(priorityCount);
                             });
 
@@ -562,77 +1683,13 @@
                             cell.appendChild(cellSummary);
                         }
                         
-                        categoryIssues.sort((a, b) => {
-                            // Priorité croissante (id numérique)
-                            const prioA = parseInt(a.fields.priority?.id || 99, 10);
-                            const prioB = parseInt(b.fields.priority?.id || 99, 10);
-                            if (prioA !== prioB) return prioA - prioB;
-                            // Date de création décroissante (plus récent d'abord)
-                            const dateA = new Date(a.fields.updated);
-                            const dateB = new Date(b.fields.updated);
-                            return dateB - dateA;
-                        });
-                        
-                        categoryIssues.forEach(issue => {
-                            const ticket = document.createElement('div');
-                            ticket.className = 'ticket';
+                        // Afficher les tickets parents avec leurs sous-tâches
+                        parentTicketsInCategory.forEach((ticketData, index) => {
+                            const issue = ticketData.ticket;
                             
-                            const ticketTop = document.createElement('div');
-                            ticketTop.className = 'ticket-top';
-                            
-                            const ticketIcon = document.createElement('img');
-                            ticketIcon.className = 'ticket-icon';
-                            ticketIcon.src = issue.fields.issuetype.iconUrl;
-                            ticketIcon.alt = issue.fields.issuetype.name;
-
-                            // Logo de priorité
-                            const priorityIcon = document.createElement('img');
-                            priorityIcon.className = 'priority-icon';
-                            priorityIcon.src = issue.fields.priority?.iconUrl || '';
-                            priorityIcon.alt = issue.fields.priority?.name || '';
-
-                            const ticketKey = document.createElement('a');
-                            ticketKey.className = 'ticket-key';
-                            ticketKey.href = getJiraIssueUrl(issue);
-                            ticketKey.target = '_blank';
-                            ticketKey.textContent = issue.key;
-                            
-                            ticketTop.appendChild(ticketIcon);
-                            if (issue.fields.priority?.iconUrl) ticketTop.appendChild(priorityIcon);
-                            ticketTop.appendChild(ticketKey);
-                            
-                            const ticketSummary = document.createElement('a');
-                            ticketSummary.className = 'ticket-summary';
-                            ticketSummary.href = getJiraIssueUrl(issue);
-                            ticketSummary.target = '_blank';
-                            ticketSummary.textContent = issue.fields.summary;
-                            
-                            const ticketTime = document.createElement('div');
-                            ticketTime.className = 'ticket-time';
-                            ticketTime.textContent = formatTimeAgo(issue.fields.updated);
-                            
-                            const ticketAssignee = document.createElement('div');
-                            ticketAssignee.className = 'ticket-assignee';
-                            
-                            if (issue.fields.assignee) {
-                                const assigneeAvatar = document.createElement('img');
-                                assigneeAvatar.className = 'assignee-avatar';
-                                assigneeAvatar.src = issue.fields.assignee.avatarUrls['24x24'];
-                                assigneeAvatar.alt = issue.fields.assignee.displayName;
-                                
-                                const assigneeName = document.createElement('span');
-                                assigneeName.textContent = issue.fields.assignee.displayName;
-                                
-                                ticketAssignee.appendChild(assigneeAvatar);
-                                ticketAssignee.appendChild(assigneeName);
-                            } else {
-                                ticketAssignee.textContent = 'Non assigné';
-                            }
-                            
-                            ticket.appendChild(ticketTop);
-                            ticket.appendChild(ticketSummary);
-                            ticket.appendChild(ticketTime);
-                            ticket.appendChild(ticketAssignee);
+                            // Récupérer les sous-tâches de ce ticket
+                            const ticketSubtasks = parentToSubtasks[issue.key] || [];
+                            const ticket = createTicketElement(issue, index, ticketSubtasks);
                             cell.appendChild(ticket);
                         });
                         
@@ -644,41 +1701,125 @@
             });
 
             table.appendChild(tbody);
-            container.appendChild(table);
+            
+            // Si c'est un re-rendu, remplacer l'ancienne table
+            if (isReRender) {
+                const oldTable = container.querySelector('.board-table');
+                if (oldTable) {
+                    oldTable.style.opacity = '0';
+                    oldTable.style.transform = 'translateY(-20px)';
+                    setTimeout(() => {
+                        container.removeChild(oldTable);
+                        container.appendChild(table);
+                    }, 300);
+                } else {
+                    container.appendChild(table);
+                }
+            } else {
+                // Ajouter la table avec animation AVANT de terminer le chargement
+                container.appendChild(table);
+            }
+            
+            // Stocker la référence de la table pour le filtre
+            currentTable = table;
+            
+            // Mettre à jour l'indicateur des tickets récemment modifiés
+            updateRecentlyModifiedIndicator(data);
+            
+            // Initialiser le filtre après avoir créé la table (seulement si pas de re-rendu)
+            if (!isReRender) {
+                initializeFilter();
+            }
+            
+            // Animation d'entrée pour la table
+            table.style.opacity = '0';
+            table.style.transform = 'translateY(20px)';
+            
+            // Attendre que la table soit ajoutée avant de terminer le chargement
+            setTimeout(() => {
+                table.style.transition = 'all 0.5s ease-out';
+                table.style.opacity = '1';
+                table.style.transform = 'translateY(0)';
+                
+                // Terminer le chargement progressif APRÈS avoir ajouté la table (seulement si pas de re-rendu)
+                if (finishLoading) {
+                    finishLoading();
+                }
+            }, 100);
         }
 
+        // Gestionnaire d'événements amélioré
         document.getElementById('fetchBtn').addEventListener('click', async () => {
+            if (isLoading) return;
+            
             const boardId = document.getElementById('boardId').value;
 
             if (!boardId) {
-                alert('Veuillez entrer l\'ID du board');
+                showNotification('Veuillez entrer l\'ID du board', 'warning');
                 return;
             }
 
-            const container = document.getElementById('boardContainer');
-            container.innerHTML = '<div class="loading">Chargement des données...</div>';
+            currentBoardId = boardId;
 
             try {
                 const data = await fetchJiraData(boardId);
-                renderBoard(data);
+                await renderBoard(data);
             } catch (error) {
-                container.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
                 console.error('Erreur complète:', error);
             }
         });
 
-        // Chargement automatique au démarrage
-        window.addEventListener('load', () => {
-            const boardId = document.getElementById('boardId').value;
-            const container = document.getElementById('boardContainer');
-            container.innerHTML = '<div class="loading">Chargement des données...</div>';
+        // Amélioration de l'expérience utilisateur pour le champ de saisie
+        const boardIdInput = document.getElementById('boardId');
+        boardIdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('fetchBtn').click();
+            }
+        });
 
-            fetchJiraData(boardId)
-                .then(data => renderBoard(data))
-                .catch(error => {
-                    container.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
-                    console.error('Erreur complète:', error);
-                });
+        // Chargement automatique au démarrage avec animation
+        window.addEventListener('load', async () => {
+            const boardId = document.getElementById('boardId').value;
+            currentBoardId = boardId;
+
+            // Attendre un peu pour montrer l'animation de chargement
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            try {
+                const data = await fetchJiraData(boardId);
+                await renderBoard(data);
+            } catch (error) {
+                console.error('Erreur complète:', error);
+            }
+        });
+
+        // Fonction pour rafraîchir les données
+        async function refreshData() {
+            if (currentBoardId) {
+                try {
+                    const data = await fetchJiraData(currentBoardId);
+                    await renderBoard(data);
+                    showNotification('Données rafraîchies', 'success');
+                } catch (error) {
+                    console.error('Erreur lors du rafraîchissement:', error);
+                }
+            }
+        }
+
+        // Raccourci clavier pour rafraîchir (F5 ou Ctrl+R)
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'F5') || (e.ctrlKey && e.key === 'r')) {
+                e.preventDefault();
+                refreshData();
+            }
+            
+            // Raccourci pour le filtre (touche F)
+            if (e.key === 'f' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault();
+                if (currentData) {
+                    toggleSprintFilter();
+                }
+            }
         });
 
         function getJiraEpicUrl(epicKey) {
@@ -687,6 +1828,39 @@
 
         function getJiraIssueUrl(issue) {
             return `https://portail.agir.orange.com/browse/${issue.key}`;
+        }
+
+        // Fonction pour calculer les jours ouvrés entre deux dates
+        function getWorkingDays(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            // Normaliser les dates à minuit
+            start.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
+            
+            let workingDays = 0;
+            const current = new Date(start);
+            
+            while (current <= end) {
+                // 0 = dimanche, 6 = samedi
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    workingDays++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            return workingDays;
+        }
+
+        // Fonction pour vérifier si un ticket a été modifié récemment (2 jours ouvrés)
+        function isRecentlyModified(issue) {
+            const updatedDate = new Date(issue.fields.updated);
+            const now = new Date();
+            const workingDaysSinceUpdate = getWorkingDays(updatedDate, now);
+            
+            return workingDaysSinceUpdate <= 2;
         }
 
         function formatTimeAgo(date) {
@@ -703,6 +1877,133 @@
             } else {
                 return `il y a ${days} jour${days > 1 ? 's' : ''}`;
             }
+        }
+
+        // Ajouter des styles CSS pour les nouvelles animations
+        const additionalStyles = document.createElement('style');
+        additionalStyles.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+            
+            .loading-spinner {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                border: 2px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                border-top-color: #fff;
+                animation: spin 1s ease-in-out infinite;
+                margin-right: 8px;
+            }
+            
+            .loading-progress {
+                text-align: center;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            
+            .loading-text {
+                font-size: 0.9rem;
+                color: var(--secondary-color);
+                margin-top: 0.5rem;
+            }
+        `;
+        document.head.appendChild(additionalStyles);
+
+        // Fonction pour gérer le filtre des sprints
+        function toggleSprintFilter() {
+            if (!currentData) return;
+            
+            isFilterActive = !isFilterActive;
+            const filterBtn = document.getElementById('filterBtn');
+            const filterIcon = document.getElementById('filterIcon');
+            const filterText = document.getElementById('filterText');
+            
+            // Mettre à jour l'apparence du bouton
+            if (isFilterActive) {
+                filterBtn.classList.remove('filter-inactive');
+                filterBtn.classList.add('filter-active');
+                filterIcon.textContent = '🔒';
+                filterText.textContent = 'Sprint actif seulement';
+                showNotification('Filtre activé : affichage du sprint actif seulement', 'info');
+            } else {
+                filterBtn.classList.remove('filter-active');
+                filterBtn.classList.add('filter-inactive');
+                filterIcon.textContent = '👁️';
+                filterText.textContent = 'Afficher tout';
+                showNotification('Filtre désactivé : affichage de tous les sprints', 'info');
+            }
+            
+            // Re-rendre le tableau avec les données filtrées
+            renderBoard(currentData, true); // true = re-rendu sans appel WS
+        }
+
+        // Fonction pour compter et afficher les tickets récemment modifiés
+        function updateRecentlyModifiedIndicator(data) {
+            if (!data || !data.issues) return;
+            
+            const recentlyModifiedCount = data.issues.filter(issue => isRecentlyModified(issue)).length;
+            const indicator = document.getElementById('recentlyModifiedIndicator');
+            const countElement = document.getElementById('recentlyModifiedCount');
+            
+            if (recentlyModifiedCount > 0) {
+                countElement.textContent = recentlyModifiedCount;
+                indicator.style.display = 'flex';
+                indicator.style.alignItems = 'center';
+                indicator.style.gap = '0.5rem';
+                
+                // Animation d'apparition
+                indicator.style.opacity = '0';
+                indicator.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    indicator.style.transition = 'all 0.3s ease-out';
+                    indicator.style.opacity = '1';
+                    indicator.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Ajouter l'événement de clic pour le filtre
+                indicator.onclick = () => toggleRecentlyModifiedFilter();
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Fonction pour basculer le filtre des tickets récemment modifiés
+        function toggleRecentlyModifiedFilter() {
+            if (!currentData) return;
+            
+            isRecentlyModifiedFilterActive = !isRecentlyModifiedFilterActive;
+            const indicator = document.getElementById('recentlyModifiedIndicator');
+            
+            if (isRecentlyModifiedFilterActive) {
+                indicator.style.background = 'linear-gradient(135deg, var(--success-color) 0%, #2E7D32 100%)';
+                indicator.title = 'Cliquer pour afficher tous les tickets';
+                showNotification('Filtre activé : affichage des tickets récemment modifiés seulement', 'info');
+            } else {
+                indicator.style.background = 'linear-gradient(135deg, var(--warning-color) 0%, #F57C00 100%)';
+                indicator.title = 'Cliquer pour filtrer les tickets récemment modifiés';
+                showNotification('Filtre désactivé : affichage de tous les tickets', 'info');
+            }
+            
+            // Re-rendre le tableau avec les données filtrées
+            renderBoard(currentData, true);
+        }
+
+        // Fonction pour initialiser le filtre
+        function initializeFilter() {
+            const filterBtn = document.getElementById('filterBtn');
+            filterBtn.style.opacity = '1';
+            filterBtn.style.cursor = 'pointer';
+            filterBtn.classList.add('filter-inactive');
+            
+            // Supprimer l'ancien event listener s'il existe
+            filterBtn.removeEventListener('click', toggleSprintFilter);
+            
+            // Ajouter l'événement de clic
+            filterBtn.addEventListener('click', toggleSprintFilter);
         }
     </script>
 </body>

@@ -62,6 +62,10 @@ class WebServiceConfig {
     buildServeApiUrl(type, id) {
         return this.buildUrl(`api/serve/${type}/${id}`);
     }
+
+    buildUrlString(endpoint) {
+        return this.buildUrl(endpoint);
+    }
 }
 
 // Créer une instance globale
